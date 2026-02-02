@@ -1,6 +1,5 @@
 import Contact from "@/components/contact";
 import Courses from "@/components/courses";
-import Footer from "@/components/footer";
 import GrandOpeningBanner from "@/components/GrandOpening";
 import Header from "@/components/header";
 import Hero from "@/components/header";
@@ -12,13 +11,12 @@ export default async function Page() {
   return (
     <>
       <Header />
-      <TrustStats />
+      <WhyChooseUs />
+      {/* <TrustStats /> */}
       <Courses />
       <GrandOpeningBanner />
       <LearningProcess />
-      <WhyChooseUs />
       <Contact />
-      <Footer />
     </>
   );
 }

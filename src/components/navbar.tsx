@@ -2,14 +2,14 @@
 
 import { cn } from "@/lib/cn";
 import { Menu, Moon, Sun, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const navItems = [
-  { label: "Courses", href: "#courses" },
-  { label: "Why Us", href: "#why-us" },
-  { label: "Success", href: "#success" },
-  { label: "Contact", href: "#contact" },
+  { label: "কোর্স মডিউল", href: "/courses" },
+  { label: "ভর্তি তথ্য", href: "/admission" },
+  { label: "যোগাযোগ", href: "/contact" },
 ];
 
 type Theme = "light" | "dark";
@@ -65,12 +65,21 @@ export default function Navbar() {
       >
         <div className="flex h-18 layout items-center justify-between px-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 font-bold">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white">
-              TC
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-bold select-none"
+          >
+            <div className="flex h-10 sm:w-12 w-10 sm:h-12 items-center justify-center rounded-full">
+              <Image
+                src="/excel-computer.png"
+                height={36}
+                width={36}
+                alt="Excel Computer & IT Center"
+                className="rounded-full h-full w-full"
+              />
             </div>
-            <span className="text-lg text-zinc-800 dark:text-zinc-100">
-              Training Center
+            <span className="text-md sm:text-lg leading-5 text-zinc-800 dark:text-zinc-100">
+              Excel Computer <br /> & IT Center
             </span>
           </Link>
 
@@ -89,7 +98,7 @@ export default function Navbar() {
 
             {/* Theme toggle */}
             <button
-              className="rounded-full p-2 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="rounded-full cursor-pointer p-2 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
               aria-label="Toggle theme"
             >
               {isDark ? (
@@ -100,12 +109,12 @@ export default function Navbar() {
             </button>
 
             {/* CTA */}
-            <a
+            <Link
               href="#contact"
               className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
-              Enroll Now
-            </a>
+              ভর্তি নিন
+            </Link>
           </div>
 
           {/* Mobile buttons */}
