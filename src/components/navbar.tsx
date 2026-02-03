@@ -67,19 +67,10 @@ export default function Navbar() {
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2 font-bold select-none"
+            className="flex text-2xl items-center gap-2 font-bold select-none"
           >
-            <div className="flex h-10 sm:w-12 w-10 sm:h-12 items-center justify-center rounded-full">
-              <Image
-                src="/excel-computer.png"
-                height={36}
-                width={36}
-                alt="Excel Computer & IT Center"
-                className="rounded-full h-full w-full"
-              />
-            </div>
-            <span className="text-md sm:text-lg leading-5 text-zinc-800 dark:text-zinc-100">
-              Excel Computer <br /> & IT Center
+            <span className="bg-linear-to-r from-blue-600 via-indigo-500 to-sky-500 bg-clip-text text-transparent">
+              Excel Computer
             </span>
           </Link>
 

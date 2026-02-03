@@ -1,36 +1,54 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Users, Briefcase, BadgeCheck, Clock, Headphones } from "lucide-react";
+import {
+  ChartNoAxesCombined,
+  Award,
+  Trophy,
+  LucideBrush,
+  LucideGlobe,
+  LucideBadgePercent,
+  LucideWand2,
+  Briefcase,
+  BadgeCheck,
+  GraduationCap,
+  FileSpreadsheet,
+  Keyboard,
+} from "lucide-react";
 import Title from "./title";
+import Card from "./card";
 
-const items = [
-  {
-    title: "অভিজ্ঞ প্রশিক্ষক",
-    desc: "বাস্তব কাজের অভিজ্ঞতা সম্পন্ন শিক্ষক",
-    no: "০১",
-  },
-  {
-    title: "হাতে-কলমে প্রশিক্ষণ",
-    desc: "প্রতিটি ক্লাসে লাইভ প্র্যাকটিস",
-    no: "০২",
-  },
-  {
-    title: "যাচাইকৃত সার্টিফিকেট",
-    desc: "ভেরিফায়েবল সার্টিফিকেট প্রদান",
-    no: "০৩",
-  },
-  {
-    title: "নমনীয় ক্লাস সময়",
-    desc: "সকাল ও সন্ধ্যা ব্যাচ সুবিধা",
-    no: "০৪",
-  },
-  {
-    title: "কোর্স শেষে সাপোর্ট",
-    desc: "শেখার পরও গাইডলাইন",
-    no: "০৫",
-  },
-];
+type RadialProgressProps = {
+  value: number;
+};
+
+const RadialProgress = ({ value }: RadialProgressProps) => (
+  <div className="relative w-16 h-16">
+    <svg className="w-full h-full -rotate-90">
+      <circle
+        cx="50%"
+        cy="50%"
+        r="24"
+        stroke="#e5e7eb"
+        strokeWidth="8"
+        fill="none"
+      />
+      <circle
+        cx="50%"
+        cy="50%"
+        r="24"
+        stroke="#3b82f6"
+        strokeWidth="8"
+        fill="none"
+        strokeDasharray={2 * Math.PI * 24}
+        strokeDashoffset={2 * Math.PI * 24 * (1 - value / 100)}
+        strokeLinecap="round"
+      />
+    </svg>
+    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-blue-600">
+      {value}%
+    </div>
+  </div>
+);
 
 export default function WhyChooseUs() {
   return (
@@ -66,20 +84,29 @@ export default function WhyChooseUs() {
 
               {/* mock progress UI */}
               <div className="space-y-4">
-                <div className="relative w-full sm:h-65 h-100">
-                  {/* Middle Card */}
-                  <CertCard
-                    className="absolute sm:top-3 sm:left-2 left-1/8 rotate-[4deg] opacity-90"
-                    title="কোর্স সার্টিফিকেট"
-                    course="Computer Basic"
-                    id="ECIT-2026-014"
+                <div className="relative w-full sm:h-65 h-110">
+                  {/* Left rotated */}
+                  <ValueChip
+                    icon={ChartNoAxesCombined}
+                    title="প্রমাণিত ফলাফল"
+                    subtitle="উচ্চ সফলতার বাস্তব রেকর্ড"
+                    className="absolute sm:top-10 top-24 sm:left-0 left-0 -rotate-8"
                   />
-                  {/* Front Card */}
-                  <CertCard
-                    className="absolute sm:top-0 top-50 sm:right-0 right-1/8 rotate-0 z-10"
-                    title="কোর্স সার্টিফিকেট"
-                    course="Office & Typing"
-                    id="ECIT-2026-032"
+
+                  {/* Right rotated */}
+                  <ValueChip
+                    icon={Award}
+                    title="মানসম্মত প্রশিক্ষণ"
+                    subtitle="স্ট্রাকচার্ড ও আপডেট কোর্স"
+                    className="absolute sm:top-0 top-0 sm:right-0 right-0 rotate-6"
+                  />
+
+                  {/* Center front */}
+                  <ValueChip
+                    icon={Trophy}
+                    title="ক্যারিয়ার প্রস্তুতি"
+                    subtitle="জব রেডি স্কিল ডেভেলপমেন্ট"
+                    className="absolute sm:bottom-0 bottom-0 sm:left-1/2 left-1/2 sm:-translate-x-1/2 -translate-x-1/2 z-10"
                     highlight
                   />
                 </div>
@@ -102,38 +129,44 @@ export default function WhyChooseUs() {
 
           {/* ================= RIGHT — SUPPORTING PROOF CLUSTER ================= */}
 
-          <div className="relative sm:h-105 h-120">
-            {/* card 1 */}
-            <ProofCard
-              className="absolute top-0 left-0 -rotate-6"
-              title="অভিজ্ঞ প্রশিক্ষক"
-              desc="শিল্পক্ষেত্রের অভিজ্ঞতা সম্পন্ন প্রশিক্ষক"
-              badge="৫+ বছর"
-            />
+          <div className="relative">
+            <div className="columns-1 sm:columns-2 lg:columns-2 xl:columns-3 gap-2">
+              <Card
+                icon={Briefcase}
+                title="ক্যারিয়ার সাপোর্ট"
+                description="ভবিষ্যৎ আয়ের সুযোগ তৈরিতে প্রয়োজনীয় ডিজিটাল স্কিল গড়ে তোলা হয়।"
+              />
 
-            {/* card 2 */}
-            <ProofCard
-              className="absolute sm:top-24 top-30 right-0 rotate-[8deg]"
-              title="যাচাইকৃত সার্টিফিকেট"
-              desc="ভেরিফায়েবল সার্টিফিকেট প্রদান"
-              badge="Verified"
-            />
+              <Card
+                icon={BadgeCheck}
+                title="জব-রেডি স্কিল"
+                description="অফিস ও কর্মক্ষেত্রে সরাসরি কাজে লাগবে এমন বাস্তব স্কিল শেখানো হয়।"
+              />
 
-            {/* card 3 */}
-            <ProofCard
-              className="absolute bottom-0 left-10 rotate-[-4deg]"
-              title="ছোট ব্যাচ"
-              desc="ব্যক্তিগত মনোযোগ নিশ্চিত"
-              badge="Focused"
-            />
+              <Card
+                icon={GraduationCap}
+                title="অভিজ্ঞ প্রশিক্ষক"
+                description="শুধু তত্ত্ব নয়, প্রতিটি বিষয়ের বাস্তব ব্যবহার শেখানো হয় ল্যাব প্র্যাকটিসে।"
+              />
 
-            {/* card 4 */}
-            <ProofCard
-              className="absolute sm:bottom-10 bottom-20 right-8 rotate-[5deg]"
-              title="ক্যারিয়ার সাপোর্ট"
-              desc="কোর্স শেষে গাইডলাইন"
-              badge="Support"
-            />
+              <Card
+                icon={FileSpreadsheet}
+                title="অফিস সফটওয়্যার"
+                description="Word, Excel, PowerPoint বাস্তব কাজের মাধ্যমে আয়ত্ত করা হয়"
+              >
+                <span className="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">
+                  ফিচার
+                </span>
+              </Card>
+
+              <Card
+                icon={Keyboard}
+                title="নির্ভুল টাইপিং"
+                description="স্পিড ও একিউরেসি বাড়াতে বিশেষ প্র্যাকটিস মডিউল অনুসরণ করা হয়|"
+              >
+                <RadialProgress value={90} />
+              </Card>
+            </div>
           </div>
         </div>
       </div>
@@ -152,41 +185,32 @@ function CheckItem({ text }: { text: string }) {
   );
 }
 
-function ProofCard({ title, desc, badge, className }: any) {
-  return (
-    <div
-      className={`w-65 backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-5 shadow-xl ${className}`}
-    >
-      <div className="text-xs mb-2 opacity-60">{badge}</div>
-      <h4 className="font-semibold mb-1">{title}</h4>
-      <p className="text-sm opacity-80">{desc}</p>
-    </div>
-  );
-}
-
-function CertCard({ title, course, id, highlight, className = "" }: any) {
+function ValueChip({
+  icon: Icon,
+  title,
+  subtitle,
+  highlight,
+  className = "",
+}: any) {
   return (
     <div
       className={`
-        w-65 backdrop-blur-xl bg-white/10 border border-white/20
-        rounded-2xl p-5 shadow-2xl
+        w-40 h-40
+        backdrop-blur-xl bg-white/10 border border-white/20
+        rounded-2xl p-4 shadow-xl
+        flex flex-col justify-between
         ${highlight ? "ring-1 ring-blue-400/40" : ""}
         ${className}
       `}
     >
-      <div className="flex justify-between items-start mb-3">
-        <p className="text-sm font-semibold">{title}</p>
-        <span className="text-[10px] px-2 py-1 rounded-md bg-green-500/20 border border-green-400/30">
-          ✓ Verified
-        </span>
+      <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
+        <Icon size={20} />
       </div>
 
-      <p className="text-xs opacity-70 mb-2">Course</p>
-      <p className="font-medium">{course}</p>
-
-      <p className="text-xs opacity-60 mt-3">Certificate ID</p>
-      <p className="text-sm font-mono">{id}</p>
+      <div>
+        <h4 className="font-semibold text-sm mb-1">{title}</h4>
+        <p className="text-xs opacity-70 leading-snug">{subtitle}</p>
+      </div>
     </div>
   );
 }
-

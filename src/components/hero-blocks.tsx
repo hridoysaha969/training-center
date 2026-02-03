@@ -45,7 +45,7 @@ export default function HeroRight() {
       <div className="absolute -bottom-6 -left-2 backdrop-blur-md bg-white/15 border border-white/20 px-4 py-3 rounded-xl shadow-lg -rotate-6">
         <p className="text-sm font-semibold">শিক্ষার্থী</p>
         <p className="text-xl font-bold">
-          <BanglaCountUp end={70} />+
+          <BanglaCountUp end={170} />+
         </p>
       </div>
     </div>
