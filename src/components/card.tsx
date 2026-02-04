@@ -18,7 +18,7 @@ const Card = ({
   className = "",
 }: CardProps) => (
   <div
-    className={`break-inside-avoid rounded-xl bg-white dark:bg-zinc-900 p-6 shadow-lg mb-4 ${className}`}
+    className={`break-inside-avoid rounded-xl bg-white dark:bg-zinc-900 p-6 shadow-xl mb-4 ${className}`}
   >
     <div className="flex flex-col items-start gap-3 mb-4">
       <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">

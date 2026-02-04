@@ -2,9 +2,9 @@
 
 import { cn } from "@/lib/cn";
 import { Menu, Moon, Sun, X } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import DiscountPopup from "./discount";
 
 const navItems = [
   { label: "কোর্স মডিউল", href: "/courses" },
@@ -54,6 +54,7 @@ export default function Navbar() {
 
   return (
     <>
+      {/* <DiscountPopup /> */}
       {/* Navbar */}
       <nav
         className={cn(
