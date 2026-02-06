@@ -1,5 +1,7 @@
 import { Course } from "@/data/cources";
 import { ArrowRight, Award, Clock } from "lucide-react";
+import { Button } from "./ui/button";
+import Link from "next/link";
 
 interface CourseCardProps {
   course: Course;
@@ -86,9 +88,17 @@ export default function CourseCard({ course }: CourseCardProps) {
             <Award size={16} /> কোর্স শেষে সার্টিফিকেট
           </span>
 
-          <button className="inline-flex bg-blue-600 text-white transition hover:bg-blue-700 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium hover:opacity-90">
-            বিস্তারিত দেখুন <ArrowRight size={16} />
-          </button>
+          <Button
+            asChild
+            className="bg-blue-600 text-white transition hover:bg-blue-700 rounded-full"
+          >
+            <Link
+              href={`/courses/${course.id}`}
+              className="inline-flex cursor-pointer bg-blue-600 text-white transition hover:bg-blue-700 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium hover:opacity-90"
+            >
+              বিস্তারিত দেখুন <ArrowRight size={16} />
+            </Link>
+          </Button>
         </div>
 
         {/* Target Group */}

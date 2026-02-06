@@ -1,3 +1,4 @@
+import { courses } from "@/data/cources";
 import { Phone, Mail, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -33,51 +34,16 @@ export default function Footer() {
               কোর্স সমূহ
             </h4>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-500 dark:hover:text-blue-400 text-zinc-600 dark:text-zinc-400 transition"
-                >
-                  {" "}
-                  অ্যাডভান্সড আইটি অ্যান্ড অফিস ম্যানেজমেন্ট{" "}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-500 dark:hover:text-blue-400 text-zinc-600 dark:text-zinc-400 transition"
-                >
-                  {" "}
-                  কম্পিউটার অফিস অ্যাপ্লিকেশন (বেসিক){" "}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-500 dark:hover:text-blue-400 text-zinc-600 dark:text-zinc-400 transition"
-                >
-                  {" "}
-                  বাংলা ও ইংরেজি কম্পিউটার টাইপিং{" "}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-500 dark:hover:text-blue-400 text-zinc-600 dark:text-zinc-400 transition"
-                >
-                  {" "}
-                  অফিস এক্সেল ও ডাটা ম্যানেজমেন্ট{" "}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-500 dark:hover:text-blue-400 text-zinc-600 dark:text-zinc-400 transition"
-                >
-                  {" "}
-                  ফ্রিল্যান্সিং বেসিক ও এআই টুলস{" "}
-                </Link>
-              </li>
+              {courses.map((item, ind) => (
+                <li key={item.id}>
+                  <Link
+                    href={`/courses/${item.id}`}
+                    className="hover:text-blue-500 dark:hover:text-blue-400 text-zinc-600 dark:text-zinc-400 transition"
+                  >
+                    {item.title}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -89,7 +55,15 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href="#courses"
+                  href="/about-us"
+                  className="hover:text-blue-500 dark:hover:text-blue-400 text-zinc-600 dark:text-zinc-400 transition"
+                >
+                  আমাদের সম্পর্কে
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/courses"
                   className="hover:text-blue-500 dark:hover:text-blue-400 text-zinc-600 dark:text-zinc-400 transition"
                 >
                   কোর্স মডিউল
@@ -97,18 +71,10 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#contact"
+                  href="/admission"
                   className="hover:text-blue-500 dark:hover:text-blue-400 text-zinc-600 dark:text-zinc-400 transition"
                 >
                   ভর্তি তথ্য
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#why-us"
-                  className="hover:text-blue-500 dark:hover:text-blue-400 text-zinc-600 dark:text-zinc-400 transition"
-                >
-                  যোগাযোগ
                 </Link>
               </li>
             </ul>
@@ -140,8 +106,9 @@ export default function Footer() {
         <div className="my-6 h-px bg-white/10" />
 
         {/* Bottom */}
-        <div className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-          © {new Date().getFullYear()} Your Institute. All rights reserved.
+        <div className="text-center text-xs sm:text-sm text-zinc-600 dark:text-zinc-400">
+          © {new Date().getFullYear()} Excel Computer & IT Center. All rights
+          reserved.
         </div>
       </div>
     </footer>

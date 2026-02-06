@@ -7,9 +7,10 @@ import { useEffect, useState } from "react";
 import DiscountPopup from "./discount";
 
 const navItems = [
+  { label: "হোম", href: "/" },
   { label: "কোর্স মডিউল", href: "/courses" },
-  { label: "ভর্তি তথ্য", href: "/admission" },
-  { label: "যোগাযোগ", href: "/contact" },
+  { label: "আমাদের সম্পর্কে", href: "/about-us" },
+  // { label: "যোগাযোগ", href: "/contact" },
 ];
 
 type Theme = "light" | "dark";
@@ -102,7 +103,7 @@ export default function Navbar() {
 
             {/* CTA */}
             <Link
-              href="#contact"
+              href="/admission"
               className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               ভর্তি নিন
@@ -132,15 +133,15 @@ export default function Navbar() {
       {/* Mobile Menu */}
       <aside
         className={cn(
-          "fixed inset-0 z-50 transition",
-          isOpen ? "visible" : "invisible",
+          "fixed inset-0 z-50",
+          isOpen ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
         {/* Overlay */}
         <div
           onClick={() => setIsOpen(false)}
           className={cn(
-            "absolute inset-0 bg-black/40 transition-opacity",
+            "absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300",
             isOpen ? "opacity-100" : "opacity-0",
           )}
         />
@@ -148,37 +149,50 @@ export default function Navbar() {
         {/* Panel */}
         <div
           className={cn(
-            "absolute right-0 top-0 h-full w-72 bg-white p-6 transition-transform dark:bg-zinc-900",
-            isOpen ? "tranzinc-x-0" : "tranzinc-x-full",
+            "absolute right-0 top-0 h-full w-[85%] max-w-sm bg-white/80 p-6 shadow-2xl backdrop-blur-xl transition-transform duration-300 dark:bg-zinc-900/80",
+            isOpen ? "translate-x-0" : "translate-x-full",
           )}
         >
+          {/* Header */}
           <div className="mb-8 flex items-center justify-between">
-            <span className="text-lg font-bold">Menu</span>
-            <button onClick={() => setIsOpen(false)}>
-              <X />
+            <span className="text-lg font-semibold tracking-wide">তালিকা</span>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="rounded-full p-2 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              <X className="h-5 w-5" />
             </button>
           </div>
 
-          <nav className="flex flex-col gap-6">
+          {/* Nav Links */}
+          <nav className="flex flex-col gap-2">
             {navItems.map((item, i) => (
               <a
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
-                className="text-lg font-medium text-zinc-700 transition hover:text-blue-600 dark:text-zinc-300"
-                style={{ transitionDelay: `${i * 60}ms` }}
+                className="group relative overflow-hidden rounded-xl border border-transparent px-4 py-3 text-base font-medium text-zinc-700 transition-all duration-300 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 dark:text-zinc-300 dark:hover:bg-blue-950/40"
+                style={{ transitionDelay: `${i * 70}ms` }}
               >
-                {item.label}
+                <span className="relative z-10">{item.label}</span>
+                <span className="absolute inset-0 z-0 translate-y-full bg-linear-to-r from-blue-500/10 to-purple-500/10 transition-transform duration-300 group-hover:translate-y-0" />
               </a>
             ))}
 
+            {/* CTA */}
             <a
               href="#contact"
-              className="mt-6 rounded-full bg-blue-600 py-3 text-center font-semibold text-white"
+              onClick={() => setIsOpen(false)}
+              className="mt-6 inline-flex items-center justify-center rounded-2xl bg-linear-to-r from-blue-600 to-purple-600 py-3 font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
             >
-              Enroll Now
+              ভর্তি নিন
             </a>
           </nav>
+
+          {/* Bottom subtle info */}
+          <p className="mt-8 text-center text-xs text-zinc-500 dark:text-zinc-400">
+            Excel Computer & IT Center
+          </p>
         </div>
       </aside>
     </>
