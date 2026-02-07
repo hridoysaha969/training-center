@@ -55,7 +55,7 @@ export default function Navbar() {
 
   return (
     <>
-      {/* <DiscountPopup /> */}
+      <DiscountPopup />
       {/* Navbar */}
       <nav
         className={cn(
