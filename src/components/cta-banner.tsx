@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Phone, MessageCircle } from "lucide-react";
+import Link from "next/link";
 
 export default function CTABanner() {
   return (
@@ -43,8 +44,10 @@ export default function CTABanner() {
               size="lg"
               className="gap-2 bg-blue-500 hover:bg-blue-600 text-white"
             >
-              <MessageCircle className="w-5 h-5" />
-              ভর্তি তথ্য জানুন
+              <Link href="/admission" className="flex items-center gap-2">
+                <MessageCircle className="w-5 h-5" />
+                ভর্তি তথ্য জানুন
+              </Link>
             </Button>
 
             <Button
@@ -52,8 +55,13 @@ export default function CTABanner() {
               variant="outline"
               className="gap-2 bg-blue-50 hover:bg-blue-100"
             >
-              <Phone className="w-5 h-5" />
-              সরাসরি কল করুন
+              <Link
+                href="tel:+8801828304973"
+                className="flex items-center gap-2"
+              >
+                <Phone className="w-5 h-5" />
+                সরাসরি কল করুন
+              </Link>
             </Button>
           </div>
 

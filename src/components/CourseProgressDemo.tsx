@@ -49,7 +49,7 @@ export default function CourseProgressDemo() {
           </svg>
 
           <div className="absolute inset-0 flex items-center justify-center font-bold">
-            62%
+            ৬২%
           </div>
         </div>
 
@@ -77,7 +77,7 @@ export default function CourseProgressDemo() {
           <div key={m.name} className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>{m.name}</span>
-              <span>{m.p}%</span>
+              <span>{m.p.toLocaleString("bn-BD")}%</span>
             </div>
 
             <div className="h-2 rounded-full bg-white/20 overflow-hidden">
