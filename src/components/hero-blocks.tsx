@@ -28,7 +28,7 @@ export default function HeroRight() {
           <div className="text-2xl">🏆</div>
           <div>
             <p className="text-sm font-medium">সার্টিফিকেট প্রস্তুত</p>
-            <p className="text-xs opacity-70">চূড়ান্ত পরীক্ষার পর</p>
+            <p className="text-xs opacity-80">চূড়ান্ত পরীক্ষার পর</p>
           </div>
         </div>
       </div>

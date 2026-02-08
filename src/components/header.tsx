@@ -21,7 +21,7 @@ export default function Header() {
               </span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-sm lg:text-lg text-slate-600 dark:text-slate-400">
+            <p className="mt-6 max-w-xl text-sm lg:text-lg text-zinc-700 dark:text-slate-200">
               শুরু থেকে অ্যাডভান্সড পর্যন্ত বাস্তবভিত্তিক কম্পিউটার প্রশিক্ষণ
               নিন অভিজ্ঞ প্রশিক্ষকের মাধ্যমে। ক্যারিয়ার গড়ার জন্য প্রয়োজনীয়
               স্কিল শিখুন আত্মবিশ্বাসের সাথে।
@@ -40,14 +40,14 @@ export default function Header() {
             </div>
 
             {/* Small trust line */}
-            <p className="mt-6 flex flex-col lg:flex-row gap-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-6 flex flex-col lg:flex-row gap-1 text-sm text-zinc-700 dark:text-zinc-200">
               <span className="flex items-center gap-0.5">
                 <Check className="w-5 h-5 text-green-400" /> অভিজ্ঞ প্রশিক্ষক
-                <Dot className="w-5 h-5 hidden lg:block text-zinc-600 dark:text-zinc-300" />
+                <Dot className="w-5 h-5 hidden lg:block text-zinc-700 dark:text-zinc-200" />
               </span>
               <span className="flex items-center gap-0.5">
                 <Check className="w-5 h-5 text-green-400" /> হাতে-কলমে প্রশিক্ষণ{" "}
-                <Dot className="w-5 h-5 hidden lg:block text-zinc-600 dark:text-zinc-300" />
+                <Dot className="w-5 h-5 hidden lg:block text-zinc-700 dark:text-zinc-200" />
               </span>
               <span className="flex items-center gap-0.5">
                 <Check className="w-5 h-5 text-green-400" /> ক্যারিয়ার-ফোকাসড

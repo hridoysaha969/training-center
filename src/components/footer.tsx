@@ -86,13 +86,23 @@ export default function Footer() {
               যোগাযোগ
             </h4>
             <ul className="space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
-              <li className="flex items-center gap-3">
-                <Phone size={16} />
-                <span>+880 18283 04973</span>
+              <li className="flex items-center">
+                <Link
+                  href="tel:+8801828304973"
+                  className="flex items-center gap-3 underline"
+                >
+                  <Phone size={16} />
+                  <span>+880 18283 04973</span>
+                </Link>
               </li>
-              <li className="flex items-center gap-3">
-                <Mail size={16} />
-                <span>contact.ecitc@gmail.com</span>
+              <li className="flex items-center">
+                <Link
+                  href="mailto:contact.ecitc@gmail.com"
+                  className="flex items-center gap-3 underline"
+                >
+                  <Mail size={16} />
+                  <span>contact.ecitc@gmail.com</span>
+                </Link>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin size={16} className="mt-0.5" />
