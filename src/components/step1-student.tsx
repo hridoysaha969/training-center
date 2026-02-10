@@ -23,6 +23,7 @@ function Step1Student() {
   const [form, setForm] = useState({
     name: "",
     dob: "",
+    binOrNid: "",
     gender: "",
     mobile: "",
     email: "",
@@ -63,6 +64,7 @@ function Step1Student() {
 
     if (!form.name) e.name = "নাম আবশ্যক";
     if (!form.dob) e.dob = "জন্ম তারিখ আবশ্যক";
+    if (!form.binOrNid) e.binOrNid = "আবশ্যক";
     if (!form.gender) e.gender = "লিঙ্গ নির্বাচন করুন";
     if (!form.mobile || form.mobile.length < 10)
       e.mobile = "সঠিক মোবাইল নম্বর দিন";
@@ -93,7 +95,7 @@ function Step1Student() {
         <div className="space-y-2">
           <label className="text-sm font-medium">পূর্ণ নাম *</label>
           <input
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
             value={form.name}
             name="name"
             onChange={handleChange}
@@ -105,7 +107,7 @@ function Step1Student() {
           <label className="text-sm font-medium">জন্ম তারিখ *</label>
           <input
             type="date"
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
             value={form.dob}
             name="dob"
             onChange={handleChange}
@@ -114,17 +116,41 @@ function Step1Student() {
         </div>
 
         <div className="space-y-2">
+          <label className="text-sm font-medium">
+            জন্ম নিবন্ধন/এনআডি নাম্বার *
+          </label>
+          <input
+            type="number"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
+            value={form.binOrNid}
+            name="binOrNid"
+            onChange={handleChange}
+          />
+          {errors.binOrNid && (
+            <p className="text-xs text-red-600">{errors.binOrNid}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
           <label className="text-sm font-medium">লিঙ্গ *</label>
           <select
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
             value={form.gender}
             name="gender"
             onChange={handleChange}
           >
-            <option value="">নির্বাচন করুন</option>
-            <option value="male">পুরুষ</option>
-            <option value="female">মহিলা</option>
-            <option value="other">অন্যান্য</option>
+            <option value="" className="bg-zinc-900 text-slate-200">
+              নির্বাচন করুন
+            </option>
+            <option value="male" className="bg-zinc-900 text-slate-200">
+              পুরুষ
+            </option>
+            <option value="female" className="bg-zinc-900 text-slate-200">
+              মহিলা
+            </option>
+            <option value="other" className="bg-zinc-900 text-slate-200">
+              অন্যান্য
+            </option>
           </select>
           {errors.gender && (
             <p className="text-xs text-red-600">{errors.gender}</p>
@@ -134,7 +160,7 @@ function Step1Student() {
         <div className="space-y-2">
           <label className="text-sm font-medium">মোবাইল নম্বর *</label>
           <input
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
             value={form.mobile}
             name="mobile"
             onChange={handleChange}
@@ -148,7 +174,7 @@ function Step1Student() {
           <label className="text-sm font-medium">ইমেইল (ঐচ্ছিক)</label>
           <input
             type="email"
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
             value={form.email}
             name="email"
             onChange={handleChange}
@@ -158,7 +184,7 @@ function Step1Student() {
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-medium">বর্তমান ঠিকানা *</label>
           <textarea
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
             rows={3}
             value={form.address}
             name="address"

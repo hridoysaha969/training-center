@@ -104,14 +104,18 @@ function Step3Academic({
             name="educationLevel"
             value={form.educationLevel}
             onChange={handleChange}
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
           >
-            <option value="">নির্বাচন করুন</option>
-            <option>JSC / JDC</option>
-            <option>SSC / সমমান</option>
-            <option>HSC / সমমান</option>
-            <option>Diploma</option>
-            <option>Honours / Degree</option>
+            <option value="" className="bg-zinc-900 text-slate-200">
+              নির্বাচন করুন
+            </option>
+            <option className="bg-zinc-900 text-slate-200">JSC / JDC</option>
+            <option className="bg-zinc-900 text-slate-200">SSC / সমমান</option>
+            <option className="bg-zinc-900 text-slate-200">HSC / সমমান</option>
+            <option className="bg-zinc-900 text-slate-200">Diploma</option>
+            <option className="bg-zinc-900 text-slate-200">
+              Honours / Degree
+            </option>
           </select>
           {errors.educationLevel && (
             <p className="text-xs text-red-600">{errors.educationLevel}</p>
@@ -125,7 +129,7 @@ function Step3Academic({
             name="passingYear"
             value={form.passingYear}
             onChange={handleChange}
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
           />
           {errors.passingYear && (
             <p className="text-xs text-red-600">{errors.passingYear}</p>
@@ -139,7 +143,7 @@ function Step3Academic({
             name="institute"
             value={form.institute}
             onChange={handleChange}
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
           />
           {errors.institute && (
             <p className="text-xs text-red-600">{errors.institute}</p>
@@ -153,7 +157,7 @@ function Step3Academic({
             name="board"
             value={form.board}
             onChange={handleChange}
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
           />
         </div>
 
@@ -164,13 +168,17 @@ function Step3Academic({
             name="computerExperience"
             value={form.computerExperience}
             onChange={handleChange}
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
           >
-            <option value="">নির্বাচন করুন</option>
-            <option>কোন অভিজ্ঞতা নেই</option>
-            <option>বেসিক জানি</option>
-            <option>মাঝারি</option>
-            <option>অভিজ্ঞ</option>
+            <option value="" className="bg-zinc-900 text-slate-200">
+              নির্বাচন করুন
+            </option>
+            <option className="bg-zinc-900 text-slate-200">
+              কোন অভিজ্ঞতা নেই
+            </option>
+            <option className="bg-zinc-900 text-slate-200">বেসিক জানি</option>
+            <option className="bg-zinc-900 text-slate-200">মাঝারি</option>
+            <option className="bg-zinc-900 text-slate-200">অভিজ্ঞ</option>
           </select>
           {errors.computerExperience && (
             <p className="text-xs text-red-600">{errors.computerExperience}</p>
@@ -186,11 +194,17 @@ function Step3Academic({
             name="hasLaptop"
             value={form.hasLaptop}
             onChange={handleChange}
-            className="w-full rounded-xl border px-4 py-2 bg-background"
+            className="w-full rounded-xl border border-zinc-500 px-4 py-2 bg-transparent"
           >
-            <option value="">নির্বাচন করুন</option>
-            <option value="yes">আছে</option>
-            <option value="no">নেই</option>
+            <option value="" className="bg-zinc-900 text-slate-200">
+              নির্বাচন করুন
+            </option>
+            <option value="yes" className="bg-zinc-900 text-slate-200">
+              আছে
+            </option>
+            <option value="no" className="bg-zinc-900 text-slate-200">
+              নেই
+            </option>
           </select>
           {errors.hasLaptop && (
             <p className="text-xs text-red-600">{errors.hasLaptop}</p>

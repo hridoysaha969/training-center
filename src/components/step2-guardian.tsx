@@ -37,7 +37,6 @@ export default function Step2Guardian() {
   >({});
 
   /* ---------- restore ---------- */
-
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     console.log(saved);
@@ -51,13 +50,11 @@ export default function Step2Guardian() {
   }, []);
 
   /* ---------- autosave ---------- */
-
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, encode(form));
   }, [form]);
 
   /* ---------- updater ---------- */
-
   function handleChange(
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -72,7 +69,6 @@ export default function Step2Guardian() {
   }
 
   /* ---------- validator ---------- */
-
   const validate = () => {
     const e: Partial<Record<keyof GuardianForm, string>> = {};
 
@@ -93,8 +89,6 @@ export default function Step2Guardian() {
       delete (window as any).__step2Validate;
     };
   }, [form]);
-
-  /* ---------- UI ---------- */
 
   return (
     <>
@@ -192,7 +186,7 @@ function Field({
         value={value}
         name={name}
         onChange={onChange}
-        className={`w-full mt-1 px-4 py-2 rounded-xl border outline-none focus:ring-2 focus:ring-green-600/30
+        className={`w-full mt-1 px-4 py-2 rounded-xl border border-zinc-500 bg-transparent outline-none focus:ring-2
         ${error ? "border-red-500" : ""}`}
       />
 

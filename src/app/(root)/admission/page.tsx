@@ -56,17 +56,11 @@ export default function AdmissionPage() {
   return (
     <>
       <div className="layout pb-20 pt-28 overflow-hidden bg-white dark:bg-zinc-950">
-        {/* Colorful Blurry Background Blob */}
-        <div className="absolute top-0 left-0 w-150 h-150 bg-linear-to-tr from-purple-300 via-white to-green-300 dark:from-purple-800 dark:via-transparent dark:to-green-700 opacity-50 rounded-full blur-3xl animate-pulse z-0" />
-
-        {/* Optional Duplicate Blobs for Depth */}
-        <div className="absolute bottom-0 right-0 w-100 h-100 bg-linear-to-br from-fuchsia-200 via-transparent to-cyan-300 dark:from-fuchsia-700 dark:via-transparent dark:to-cyan-600 opacity-40 rounded-full blur-2xl z-0" />
-
         {/* Timeline */}
         <StepTimeline currentStep={currentStep} steps={steps} />
 
         {/* Step Container */}
-        <div className="mt-12 relative overflow-hidden shadow-xl">
+        <div className="mt-12 relative overflow-hidden shadow-2xl">
           <div
             className="flex transition-transform duration-500 ease-in-out"
             style={{
@@ -75,7 +69,7 @@ export default function AdmissionPage() {
           >
             {/* .slice(0, currentStep) */}
             {steps.map((step) => (
-              <div key={step.id} className="w-full shrink-0 px-2">
+              <div key={step.id} className="w-full shrink-0">
                 <StepPanel step={step} setStep3Valid={setStep3Valid} />
               </div>
             ))}
@@ -115,7 +109,7 @@ export default function AdmissionPage() {
 
 function StepPanel({ step, setStep3Valid }: any) {
   return (
-    <div className="rounded-2xl border p-8 min-h-65">
+    <div className="rounded-2xl border p-8 min-h-65 dark:bg-zinc-900">
       <div className="">
         {step.id === 1 && <Step1Student />}
         {step.id === 2 && <Step2Guardian />}
