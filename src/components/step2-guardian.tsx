@@ -39,7 +39,7 @@ export default function Step2Guardian() {
   /* ---------- restore ---------- */
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    console.log(saved);
+
     if (saved) {
       try {
         setForm(decode(saved));
