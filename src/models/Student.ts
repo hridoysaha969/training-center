@@ -1,57 +1,89 @@
-import mongoose, { model, models, Schema } from "mongoose";
+import mongoose, { Schema, model, models, Types } from "mongoose";
 
-const GuardianSchema = new Schema(
+export type StudentDoc = {
+  roll: string; // unique, auto-generated
+  fullName: string;
+  dateOfBirth: Date;
+  nidOrBirthId: string; // unique
+  gender: "MALE" | "FEMALE" | "OTHER";
+  phone: string;
+  email?: string;
+  presentAddress: string;
+  photoUrl: string;
+
+  guardian: {
+    name: string;
+    relation: string;
+    phone: string;
+    occupation: string;
+    address: string;
+  };
+
+  academic: {
+    qualification: string;
+    passingYear: string;
+    instituteName: string;
+  };
+
+  admissionDate: Date;
+
+  // certificate (issued later)
+  certificateId?: string;
+  certificateIssuedAt?: Date;
+  certificateIssuedBy?: Types.ObjectId;
+
+  // audit
+  createdBy: Types.ObjectId;
+  updatedBy?: Types.ObjectId;
+};
+
+const StudentSchema = new Schema<StudentDoc>(
   {
-    name: { type: String, required: true },
-    relation: { type: String, required: true },
-    phone: { type: String, required: true },
-    occupation: { type: String, required: true },
-    address: { type: String, required: true },
-  },
-  { _id: false },
-);
-
-const AcademicSchema = new Schema(
-  {
-    qualification: { type: String, required: true },
-    passingYear: { type: String, required: true },
-    instituteName: { type: String, required: true },
-  },
-  { _id: false },
-);
-
-const AdmissionSchema = new Schema(
-  {
-    courseName: { type: String, required: true },
-    admissionDate: { type: Date, default: Date.now },
-    admissionFee: { type: Number, required: true },
-
-    roll: { type: String, unique: true, required: true },
-    certificateId: { type: String, unique: true, required: true },
-  },
-  { _id: false },
-);
-
-const StudentSchema = new Schema(
-  {
-    fullName: { type: String, required: true },
+    roll: { type: String, required: true, trim: true },
+    fullName: { type: String, required: true, trim: true },
     dateOfBirth: { type: Date, required: true },
-    nidOrBirthId: { type: String, required: true },
+    nidOrBirthId: { type: String, required: true, trim: true },
+    gender: { type: String, required: true, enum: ["MALE", "FEMALE", "OTHER"] },
+    phone: { type: String, required: true, trim: true },
+    email: { type: String, trim: true },
+    presentAddress: { type: String, required: true, trim: true },
+    photoUrl: { type: String, required: true, trim: true },
 
-    gender: { type: String, required: true },
-    phone: { type: String, required: true },
-    email: { type: String },
+    guardian: {
+      name: { type: String, required: true, trim: true },
+      relation: { type: String, required: true, trim: true },
+      phone: { type: String, required: true, trim: true },
+      occupation: { type: String, required: true, trim: true },
+      address: { type: String, required: true, trim: true },
+    },
 
-    address: { type: String, required: true },
-    photoUrl: { type: String, required: true },
+    academic: {
+      qualification: { type: String, required: true, trim: true },
+      passingYear: { type: String, required: true, trim: true },
+      instituteName: { type: String, required: true, trim: true },
+    },
 
-    guardian: { type: GuardianSchema, required: true },
-    academic: { type: AcademicSchema, required: true },
-    admission: { type: AdmissionSchema, required: true },
+    admissionDate: { type: Date, required: true },
+
+    certificateId: { type: String, trim: true },
+    certificateIssuedAt: { type: Date },
+    certificateIssuedBy: { type: Schema.Types.ObjectId, ref: "AdminUser" },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "AdminUser",
+      required: true,
+    },
+    updatedBy: { type: Schema.Types.ObjectId, ref: "AdminUser" },
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true },
 );
 
-export const Student = models.Student || model("Student", StudentSchema);
+StudentSchema.index({ roll: 1 }, { unique: true });
+StudentSchema.index({ nidOrBirthId: 1 }, { unique: true });
+
+// certificate unique but optional => sparse index
+StudentSchema.index({ certificateId: 1 }, { unique: true, sparse: true });
+
+export const Student =
+  models.Student || model<StudentDoc>("Student", StudentSchema);

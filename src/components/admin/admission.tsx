@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -45,36 +45,43 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useRouter } from "next/navigation";
+
+type DbCourse = {
+  id: string; // ObjectId string
+  name: string;
+  code: string;
+  durationMonths: 3 | 6;
+  fee: number;
+};
 
 function taka(n: number) {
   return `৳ ${n.toLocaleString("en-US")}`;
 }
 
-// UI-only roll generator (later server-side atomic)
-function makeMockRoll() {
-  const now = new Date();
-  const yy = String(now.getFullYear()).slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const rand = String(Math.floor(100 + Math.random() * 900)); // 3 digits
-  return `${yy}${mm}${rand}`;
-}
+const ROLL_PLACEHOLDER = "AUTO";
 
-// UI-only batch preview (server will compute true batchNo based on counter)
 function batchPreview(courseCode?: string) {
   if (!courseCode) return "Select a course";
   const now = new Date();
   const yy = String(now.getFullYear()).slice(-2);
   const mm = String(now.getMonth() + 1).padStart(2, "0");
-  return `${courseCode}-${yy}${mm}-01`;
+  return `${courseCode}-${yy}${mm}-**`;
 }
 
+type NidCheckState =
+  | { status: "idle"; message?: string }
+  | { status: "checking"; message?: string }
+  | { status: "ok"; message?: string }
+  | { status: "duplicate"; message?: string };
+
 export default function AdmissionPage() {
-  const initialRollRef = useRef(makeMockRoll());
+  const router = useRouter();
 
   const form = useForm<AdmissionInput>({
     resolver: zodResolver(admissionSchema),
     defaultValues: {
-      roll: initialRollRef.current,
+      roll: ROLL_PLACEHOLDER,
 
       fullName: "",
       dateOfBirth: "",
@@ -104,25 +111,41 @@ export default function AdmissionPage() {
   const pendingValuesRef = useRef<AdmissionInput | null>(null);
 
   // Duplicate check state
-  const [nidCheck, setNidCheck] = useState<{
-    status: "idle" | "checking" | "ok" | "duplicate";
-    message?: string;
-  }>({ status: "idle" });
+  const [nidCheck, setNidCheck] = useState<NidCheckState>({ status: "idle" });
+  const [submitting, setSubmitting] = useState(false);
+
+  const [dbCourses, setDbCourses] = useState<DbCourse[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
 
   const courseId = form.watch("courseId");
   const photoUrl = form.watch("photoUrl");
-  const nid = form.watch("nidOrBirthId");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/courses");
+        const json = await res.json();
+        if (res.ok && json?.success) setDbCourses(json.data);
+        else toast.error(json?.message || "Failed to load courses");
+      } catch {
+        toast.error("Failed to load courses");
+      } finally {
+        setCoursesLoading(false);
+      }
+    })();
+  }, []);
 
   const course = useMemo(
-    () => courses.find((c) => c.id === courseId),
-    [courseId],
+    () => dbCourses.find((c) => c.id === courseId),
+    [dbCourses, courseId],
   );
 
   const canSubmit =
     form.formState.isValid &&
     !!courseId &&
     nidCheck.status !== "duplicate" &&
-    nidCheck.status !== "checking";
+    nidCheck.status !== "checking" &&
+    !submitting;
 
   async function runDuplicateCheck(nidValue: string) {
     const v = nidValue.trim();
@@ -134,43 +157,108 @@ export default function AdmissionPage() {
     setNidCheck({ status: "checking", message: "Checking duplicate..." });
 
     try {
-      const exists = await checkDuplicateNid(v);
-      if (exists) {
+      const res = await fetch(
+        `/api/admin/students/exists?n=${encodeURIComponent(v)}`,
+        { method: "GET" },
+      );
+
+      if (res.status === 401 || res.status === 403) {
+        setNidCheck({ status: "idle" });
+        toast.error("Session expired. Please login again.");
+        router.push("/admin/login");
+        return;
+      }
+
+      const json = await res.json();
+
+      if (!res.ok || !json?.success) {
+        setNidCheck({ status: "idle" });
+        toast.error(json?.message || "Failed to check duplicate.");
+        return;
+      }
+
+      if (json.exists) {
         setNidCheck({
           status: "duplicate",
           message: "This NID/Birth Registration Number already exists.",
         });
-        // also set form error so user sees it as validation issue
         form.setError("nidOrBirthId", {
           type: "manual",
           message: "Duplicate detected. Please verify student record.",
         });
       } else {
         setNidCheck({ status: "ok", message: "Looks unique." });
-        // clear manual error if any
         const err = form.formState.errors.nidOrBirthId;
         if (err?.type === "manual") form.clearErrors("nidOrBirthId");
       }
     } catch {
       setNidCheck({ status: "idle" });
-      toast.error("Failed to check duplicate. Try again.");
+      toast.error("Network error. Try again.");
     }
   }
 
   // This is called after user confirms
   async function finalizeSubmit(values: AdmissionInput) {
+    setSubmitting(true);
+
     try {
-      // Later backend:
-      // POST /api/admission
-      // (server generates roll + batch atomically)
-      console.log("FINAL SUBMIT:", values);
+      const res = await fetch("/api/admin/admission", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
 
-      toast.success("Admission submitted successfully.");
+      const json = await res.json().catch(() => null);
 
-      // Reset form with a fresh roll
-      const newRoll = makeMockRoll();
+      if (res.status === 401 || res.status === 403) {
+        toast.error("Unauthorized. Please login again.");
+        router.push("/admin/login");
+        return;
+      }
+
+      if (res.status === 409) {
+        // duplicate NID/Birth ID (server-side check)
+        setNidCheck({
+          status: "duplicate",
+          message: "This NID/Birth Registration Number already exists.",
+        });
+        form.setError("nidOrBirthId", {
+          type: "manual",
+          message: "Duplicate detected. Please verify student record.",
+        });
+        toast.error(json?.message || "Duplicate detected.");
+        return;
+      }
+
+      if (res.status === 422) {
+        toast.error("Validation failed. Please check the form.");
+        // optional: if backend returns zod flatten errors
+        return;
+      }
+
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || "Failed to create admission.");
+        return;
+      }
+
+      const roll = json.data?.roll as string | undefined;
+      const batchName = json.data?.batchName as string | undefined;
+
+      toast.success("Admission created successfully.", {
+        description: roll
+          ? `Roll: ${roll}${batchName ? ` • Batch: ${batchName}` : ""}`
+          : undefined,
+        action: roll
+          ? {
+              label: "View Student",
+              onClick: () => router.push(`/admin/students/${roll}`),
+            }
+          : undefined,
+      });
+
+      // ✅ Clear form after submission (as you requested)
       form.reset({
-        roll: newRoll,
+        roll: ROLL_PLACEHOLDER,
         fullName: "",
         dateOfBirth: "",
         nidOrBirthId: "",
@@ -191,16 +279,16 @@ export default function AdmissionPage() {
       });
 
       setNidCheck({ status: "idle" });
-
-      // optional: bring user back to top
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
-      toast.error("Failed to submit admission.");
+      toast.error("Network error while submitting.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
   async function onSubmit(values: AdmissionInput) {
-    // Ensure duplicate check is done before confirm
+    // Ensure duplicate check has been performed at least once
     await runDuplicateCheck(values.nidOrBirthId);
 
     // If duplicate, stop
@@ -209,7 +297,6 @@ export default function AdmissionPage() {
       return;
     }
 
-    // Open confirm dialog
     pendingValuesRef.current = values;
     setConfirmOpen(true);
   }
@@ -251,7 +338,7 @@ export default function AdmissionPage() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Roll is auto-generated and cannot be edited.
+                        Roll is generated on submit (server-side).
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -274,9 +361,9 @@ export default function AdmissionPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {courses.map((c) => (
+                          {dbCourses.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
-                              {c.name} ({c.durationMonths} months)
+                              {c.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -315,16 +402,6 @@ export default function AdmissionPage() {
                     batch).
                   </p>
                 </div>
-
-                {/* <Button type="submit" className="w-full" disabled={!canSubmit}>
-                  Submit Admission
-                </Button>
-
-                {nidCheck.status === "checking" && (
-                  <p className="text-xs text-muted-foreground">
-                    Checking duplicate NID/Birth ID...
-                  </p>
-                )} */}
               </CardContent>
             </Card>
           </div>
@@ -432,7 +509,7 @@ export default function AdmissionPage() {
                         }}
                         onChange={(e) => {
                           field.onChange(e);
-                          setNidCheck({ status: "idle" }); // reset hint while typing
+                          setNidCheck({ status: "idle" });
                         }}
                       />
                     </FormControl>
@@ -484,14 +561,19 @@ export default function AdmissionPage() {
                     </FormDescription>
                     <FormMessage />
 
-                    <div className="mt-3 grid gap-3 lg:grid-cols-3 items-start">
-                      <div className="overflow-hidden aspect-square col-span-1 rounded-xl border bg-muted">
+                    <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                      <div className="rounded-xl border bg-muted/30 p-3 text-xs text-muted-foreground">
+                        Tip: Use a direct image URL. If preview fails, the URL
+                        may not allow hotlinking.
+                      </div>
+
+                      <div className="overflow-hidden rounded-xl border bg-muted">
                         {photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={photoUrl}
                             alt="Student preview"
-                            className="h-full w-full object-cover"
+                            className="h-48 w-full object-cover"
                           />
                         ) : (
                           <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
@@ -610,17 +692,37 @@ export default function AdmissionPage() {
             <Button
               type="button"
               variant="outline"
+              disabled={submitting}
               onClick={() => {
-                const newRoll = makeMockRoll();
-                form.reset({ ...form.getValues(), roll: newRoll });
+                form.reset({
+                  roll: "AUTO",
+                  fullName: "",
+                  dateOfBirth: "",
+                  nidOrBirthId: "",
+                  gender: "MALE",
+                  phone: "",
+                  email: "",
+                  presentAddress: "",
+                  photoUrl: "",
+                  guardianName: "",
+                  guardianRelation: "",
+                  guardianPhone: "",
+                  guardianOccupation: "",
+                  guardianAddress: "",
+                  qualification: "",
+                  passingYear: "",
+                  instituteName: "",
+                  courseId: "",
+                });
                 setNidCheck({ status: "idle" });
+                window.scrollTo({ top: 0, behavior: "smooth" });
               }}
             >
-              Reset Fields
+              Clear Form
             </Button>
 
-            <Button type="submit" disabled={!canSubmit}>
-              Submit Admission
+            <Button type="submit" disabled={!canSubmit || coursesLoading}>
+              {submitting ? "Submitting..." : "Submit Admission"}
             </Button>
           </div>
         </form>

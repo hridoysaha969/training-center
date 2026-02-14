@@ -1,8 +1,19 @@
-import { model, models, Schema } from "mongoose";
+import mongoose, { Schema, model, models } from "mongoose";
 
-const CounterSchema = new Schema({
-  key: { type: String, required: true, unique: true },
-  value: { type: Number, default: 0 },
-});
+export type CounterDoc = {
+  key: string; // e.g. "roll:2602" or "batch:BC:2602"
+  seq: number;
+};
 
-export const Counter = models.Counter || model("Counter", CounterSchema);
+const CounterSchema = new Schema<CounterDoc>(
+  {
+    key: { type: String, required: true, trim: true },
+    seq: { type: Number, required: true, default: 0 },
+  },
+  { timestamps: true },
+);
+
+CounterSchema.index({ key: 1 }, { unique: true });
+
+export const Counter =
+  models.Counter || model<CounterDoc>("Counter", CounterSchema);
