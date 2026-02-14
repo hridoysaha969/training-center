@@ -72,9 +72,9 @@ function MetricCard({
 const KpiCard = () => {
   const stats = {
     monthlyAdmissions: 24,
-    monthlyCashPaid: 18500,
-    monthlyInvestment: 12000,
-    monthlyRevenue: 6500,
+    monthlyCashPaid: 72000,
+    monthlyInvestment: 9500,
+    monthlyRevenue: 62500,
   };
 
   return (
@@ -89,7 +89,7 @@ const KpiCard = () => {
       <MetricCard
         title="Cash Paid"
         value={`৳ ${stats.monthlyCashPaid.toLocaleString("en-US")}`}
-        delta={-6.2}
+        delta={6.2}
         icon={<Wallet size={18} />}
       />
 

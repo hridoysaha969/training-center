@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -12,6 +13,7 @@ import {
 } from "../ui/table";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/cn";
+import { useRouter } from "next/navigation";
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -27,6 +29,8 @@ function taka(n: number) {
 }
 
 export default function OverviewTables() {
+  const router = useRouter();
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {/* Latest Admissions */}
@@ -61,7 +65,17 @@ export default function OverviewTables() {
 
                 <TableBody>
                   {latestAdmissions.map((row) => (
-                    <TableRow key={row.roll}>
+                    <TableRow
+                      key={row.roll}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => router.push(`/admin/students/${row.roll}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter")
+                          router.push(`/admin/students/${row.roll}`);
+                      }}
+                      className="cursor-pointer transition-colors hover:bg-muted/60"
+                    >
                       <TableCell className="font-medium">{row.roll}</TableCell>
                       <TableCell>{row.name}</TableCell>
                       <TableCell className="hidden xl:table-cell">
@@ -122,10 +136,19 @@ export default function OverviewTables() {
                   {latestTransactions.map((row, idx) => (
                     <TableRow
                       key={idx}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        router.push(`/admin/transactions/${row.id}`)
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter")
+                          router.push(`/admin/transactions/${row.id}`);
+                      }}
                       className={cn(
                         row.type === "CREDIT"
-                          ? "bg-green-200/50 dark:bg-green-400/40"
-                          : "bg-red-200/50 dark:bg-red-400/40",
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 cursor-pointer transition-colors hover:bg-muted/60"
+                          : "bg-rose-500/10 text-rose-600 dark:text-rose-400 cursor-pointer transition-colors hover:bg-muted/60",
                       )}
                     >
                       <TableCell>

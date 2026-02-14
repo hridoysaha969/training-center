@@ -1,3 +1,135 @@
+export type StudentRow = {
+  roll: string;
+  name: string;
+  phone: string;
+  course: string;
+  admissionDate: string; // ISO
+  fee: number;
+  status: "PAID" | "DUE";
+};
+
+export const studentsMock: StudentRow[] = [
+  {
+    roll: "2602001",
+    name: "Mahfuz Rahman",
+    phone: "01812-123456",
+    course: "Office Application",
+    admissionDate: "2026-02-03",
+    fee: 3500,
+    status: "PAID",
+  },
+  {
+    roll: "2602002",
+    name: "Nusrat Jahan",
+    phone: "01711-888777",
+    course: "Graphic Design",
+    admissionDate: "2026-02-04",
+    fee: 5000,
+    status: "DUE",
+  },
+  {
+    roll: "2602003",
+    name: "Sabbir Hossain",
+    phone: "01955-111222",
+    course: "Web Development",
+    admissionDate: "2026-02-05",
+    fee: 7000,
+    status: "PAID",
+  },
+  {
+    roll: "2602004",
+    name: "Tanjila Akter",
+    phone: "01670-222333",
+    course: "Digital Marketing",
+    admissionDate: "2026-02-06",
+    fee: 4500,
+    status: "PAID",
+  },
+  {
+    roll: "2602005",
+    name: "Rafi Ahmed",
+    phone: "01890-444555",
+    course: "Office Application",
+    admissionDate: "2026-02-07",
+    fee: 3500,
+    status: "DUE",
+  },
+  {
+    roll: "2602006",
+    name: "Jannatul Ferdous",
+    phone: "01722-666777",
+    course: "Graphic Design",
+    admissionDate: "2026-02-08",
+    fee: 5000,
+    status: "PAID",
+  },
+  {
+    roll: "2602007",
+    name: "Aminul Islam",
+    phone: "01918-333444",
+    course: "Web Development",
+    admissionDate: "2026-02-09",
+    fee: 7000,
+    status: "PAID",
+  },
+  {
+    roll: "2602008",
+    name: "Shuvo Das",
+    phone: "01844-555666",
+    course: "Office Application",
+    admissionDate: "2026-02-10",
+    fee: 3500,
+    status: "PAID",
+  },
+  {
+    roll: "2602009",
+    name: "Mim Akter",
+    phone: "01712-777888",
+    course: "Digital Marketing",
+    admissionDate: "2026-02-11",
+    fee: 4500,
+    status: "DUE",
+  },
+  {
+    roll: "2602010",
+    name: "Hasan Mahmud",
+    phone: "01611-999000",
+    course: "Graphic Design",
+    admissionDate: "2026-02-12",
+    fee: 5000,
+    status: "PAID",
+  },
+
+  // add more to test pagination
+  {
+    roll: "2602011",
+    name: "Nayeem Hasan",
+    phone: "01810-333222",
+    course: "Web Development",
+    admissionDate: "2026-02-12",
+    fee: 7000,
+    status: "DUE",
+  },
+  {
+    roll: "2602012",
+    name: "Sumi Akter",
+    phone: "01780-222111",
+    course: "Office Application",
+    admissionDate: "2026-02-13",
+    fee: 3500,
+    status: "PAID",
+  },
+  {
+    roll: "2602013",
+    name: "Fahim Rahman",
+    phone: "01920-444333",
+    course: "Graphic Design",
+    admissionDate: "2026-02-13",
+    fee: 5000,
+    status: "PAID",
+  },
+];
+
 export const latestAdmissions = [
   {
     roll: "2602001",
@@ -83,6 +215,7 @@ export const latestAdmissions = [
 
 export const latestTransactions = [
   {
+    id: "tx_001",
     type: "CREDIT",
     title: "Student Payment",
     date: "2026-02-12",
@@ -90,6 +223,7 @@ export const latestTransactions = [
     method: "Cash",
   },
   {
+    id: "tx_002",
     type: "DEBIT",
     title: "Printer Ink",
     date: "2026-02-12",
@@ -97,6 +231,7 @@ export const latestTransactions = [
     method: "Cash",
   },
   {
+    id: "tx_003",
     type: "CREDIT",
     title: "Student Payment",
     date: "2026-02-11",
@@ -104,13 +239,15 @@ export const latestTransactions = [
     method: "Cash",
   },
   {
-    type: "DEBIT",
-    title: "Internet Bill",
+    id: "tx_004",
+    type: "CREDIT",
+    title: "Student Payment",
     date: "2026-02-11",
     amount: 1500,
     method: "bKash",
   },
   {
+    id: "tx_005",
     type: "CREDIT",
     title: "Admission Fee",
     date: "2026-02-10",
@@ -118,6 +255,7 @@ export const latestTransactions = [
     method: "Cash",
   },
   {
+    id: "tx_006",
     type: "DEBIT",
     title: "Classroom Setup",
     date: "2026-02-10",
@@ -125,6 +263,7 @@ export const latestTransactions = [
     method: "Cash",
   },
   {
+    id: "tx_007",
     type: "CREDIT",
     title: "Student Payment",
     date: "2026-02-09",
@@ -132,6 +271,7 @@ export const latestTransactions = [
     method: "Nagad",
   },
   {
+    id: "tx_008",
     type: "DEBIT",
     title: "Snacks",
     date: "2026-02-09",
@@ -139,6 +279,7 @@ export const latestTransactions = [
     method: "Cash",
   },
   {
+    id: "tx_009",
     type: "CREDIT",
     title: "Student Payment",
     date: "2026-02-08",
@@ -146,10 +287,139 @@ export const latestTransactions = [
     method: "Cash",
   },
   {
+    id: "tx_010",
+    type: "CREDIT",
+    title: "Student Payment",
+    date: "2026-02-08",
+    amount: 3000,
+    method: "Cash",
+  },
+];
+
+export type TxType = "CREDIT" | "DEBIT";
+export type TxMethod = "Cash" | "bKash" | "Nagad" | "Bank";
+
+export type TransactionRow = {
+  id: string;
+  type: TxType;
+  title: string;
+  note?: string;
+  method: TxMethod;
+  amount: number;
+  date: string; // ISO yyyy-mm-dd
+};
+
+export const transactionsMock: TransactionRow[] = [
+  {
+    id: "tx_001",
+    type: "CREDIT",
+    title: "Student Payment",
+    note: "Roll: 2602001",
+    method: "Cash",
+    amount: 3500,
+    date: "2026-02-12",
+  },
+  {
+    id: "tx_002",
+    type: "DEBIT",
+    title: "Printer Ink",
+    method: "Cash",
+    amount: 1200,
+    date: "2026-02-12",
+  },
+  {
+    id: "tx_003",
+    type: "CREDIT",
+    title: "Student Payment",
+    note: "Roll: 2602002",
+    method: "Cash",
+    amount: 5000,
+    date: "2026-02-11",
+  },
+  {
+    id: "tx_004",
+    type: "DEBIT",
+    title: "Internet Bill",
+    method: "bKash",
+    amount: 1500,
+    date: "2026-02-11",
+  },
+  {
+    id: "tx_005",
+    type: "CREDIT",
+    title: "Admission Fee",
+    note: "Web Dev",
+    method: "Cash",
+    amount: 7000,
+    date: "2026-02-10",
+  },
+  {
+    id: "tx_006",
+    type: "DEBIT",
+    title: "Classroom Setup",
+    method: "Cash",
+    amount: 2500,
+    date: "2026-02-10",
+  },
+  {
+    id: "tx_007",
+    type: "CREDIT",
+    title: "Student Payment",
+    note: "Roll: 2602009",
+    method: "Nagad",
+    amount: 4500,
+    date: "2026-02-09",
+  },
+  {
+    id: "tx_008",
+    type: "DEBIT",
+    title: "Snacks",
+    method: "Cash",
+    amount: 600,
+    date: "2026-02-09",
+  },
+  {
+    id: "tx_009",
+    type: "CREDIT",
+    title: "Student Payment",
+    note: "Roll: 2602008",
+    method: "Cash",
+    amount: 3500,
+    date: "2026-02-08",
+  },
+  {
+    id: "tx_010",
     type: "DEBIT",
     title: "Stationery",
-    date: "2026-02-08",
-    amount: 400,
     method: "Cash",
+    amount: 400,
+    date: "2026-02-08",
+  },
+
+  // extra rows to test pagination
+  {
+    id: "tx_011",
+    type: "DEBIT",
+    title: "Electricity Bill",
+    method: "Bank",
+    amount: 3200,
+    date: "2026-02-07",
+  },
+  {
+    id: "tx_012",
+    type: "CREDIT",
+    title: "Student Payment",
+    note: "Roll: 2602006",
+    method: "Cash",
+    amount: 5000,
+    date: "2026-02-07",
+  },
+  {
+    id: "tx_013",
+    type: "DEBIT",
+    title: "Cleaning Supplies",
+    method: "Cash",
+    amount: 800,
+    date: "2026-02-06",
   },
 ];

@@ -39,7 +39,7 @@ const sidebarLinks = {
     },
     {
       title: "Addmission",
-      url: "/admin/addmission",
+      url: "/admin/admission",
       icon: Plus,
     },
     {
