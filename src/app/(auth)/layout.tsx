@@ -16,7 +16,7 @@ export default async function AdminLayout({
 
   return (
     <SidebarProvider>
-      {session?.user && <AppSidebar user={session?.user} />}
+      <AppSidebar user={session?.user} />
 
       <div className="flex-1">
         {session?.user && <AdminHeader />}

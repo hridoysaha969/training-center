@@ -2,7 +2,10 @@ import mongoose, { Schema, model, models, Types } from "mongoose";
 
 export type EnrollmentDoc = {
   studentId: Types.ObjectId;
-  courseId: Types.ObjectId;
+  courseId: {
+    type: Schema.Types.ObjectId;
+    ref: "Course"; // MUST match model name exactly
+  };
   batchName: string; // BC-2601-01
   startDate: Date;
   status: "RUNNING" | "COMPLETED";

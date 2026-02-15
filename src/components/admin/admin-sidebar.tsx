@@ -88,6 +88,8 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 };
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
+  if (!user) return null;
+
   return (
     <Sidebar collapsible="icon" {...props}>
       {/* DONE: SIDEBAR HEADER */}

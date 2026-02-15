@@ -1,23 +1,101 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { studentDetailsMock } from "@/data/mock-student-details";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
+import { notFound } from "next/navigation";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+
+type StudentDetailsResponse = {
+  success: boolean;
+  data?: {
+    student: {
+      roll: string;
+      fullName: string;
+      dateOfBirth: string | Date;
+      nidOrBirthId: string;
+      gender: string;
+      phone: string;
+      email: string;
+      presentAddress: string;
+      photoUrl: string;
+      admissionDate: string | Date;
+      certificateId: string | null;
+      certificateIssuedAt: string | Date | null;
+      guardian: {
+        name: string;
+        relation: string;
+        phone: string;
+        occupation: string;
+        address: string;
+      };
+      academic: {
+        qualification: string;
+        passingYear: string;
+        instituteName: string;
+      };
+    };
+    enrollments: Array<{
+      id: string;
+      batchName: string;
+      startDate: string | Date;
+      status: "RUNNING" | "COMPLETED";
+      course: null | {
+        id: string;
+        name: string;
+        code: string;
+        durationMonths: number;
+        fee: number;
+      };
+    }>;
+  };
+};
+
+function formatDate(d: any) {
+  const date = new Date(d);
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 export default async function StudentDetailsPage({
   params,
 }: {
   params: { roll: string };
 }) {
-  const roll = (await params).roll; // e.g. "2602001"
+  const roll = (await params).roll?.trim();
+  // Server-side fetch from your own API (keeps RBAC consistent)
+  const res = await fetch(
+    `${process.env.NEXTAUTH_URL}/api/admin/students/${encodeURIComponent(
+      roll,
+    )}`,
+    { cache: "no-store" },
+  );
 
-  // UI-first: later we’ll fetch by params.roll
-  const data = studentDetailsMock;
-  const s = data.student;
+  if (res.status === 404) return notFound();
+  if (!res.ok) {
+    // You can build a nicer error UI later
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-semibold">Student Details</h1>
+        <p className="text-sm text-muted-foreground">
+          Failed to load student. Status: {res.status}
+        </p>
+        <Button asChild variant="outline">
+          <Link href="/admin/students">Back</Link>
+        </Button>
+      </div>
+    );
+  }
 
-  const paid = s.status === "PAID";
+  const json = (await res.json()) as StudentDetailsResponse;
+  const s = json.data!.student;
+  const enrollments = json.data!.enrollments;
+
+  const certificateIssued = !!s.certificateId;
 
   return (
     <div className="space-y-6 p-4">
@@ -26,17 +104,25 @@ export default async function StudentDetailsPage({
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold">{s.fullName}</h1>
-            <Badge variant={paid ? "default" : "secondary"}>
-              {paid ? "Paid" : "Due"}
+
+            <Badge variant={certificateIssued ? "default" : "secondary"}>
+              {certificateIssued ? "Certificate Issued" : "Not Issued"}
             </Badge>
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Roll: <span className="font-medium text-foreground">{roll}</span>
+            Roll: <span className="font-medium text-foreground">{s.roll}</span>
             {" • "}
+            Admission:{" "}
+            <span className="font-medium text-foreground">
+              {formatDate(s.admissionDate)}
+            </span>
+          </p>
+
+          <p className="text-sm text-muted-foreground">
             Certificate:{" "}
             <span className="font-medium text-foreground">
-              {s.certificateId}
+              {s.certificateId ?? "—"}
             </span>
           </p>
         </div>
@@ -45,6 +131,8 @@ export default async function StudentDetailsPage({
           <Button asChild variant="outline">
             <Link href="/admin/students">Back</Link>
           </Button>
+
+          {/* Later: role protected actions */}
           <Button variant="outline">Edit</Button>
           <Button>Print</Button>
         </div>
@@ -52,9 +140,9 @@ export default async function StudentDetailsPage({
 
       <Separator />
 
-      {/* Top section: Photo + Quick facts */}
+      {/* Top section: Photo + Quick Info */}
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Photo card */}
+        {/* Photo */}
         <Card className="shadow-none lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-base">Student Photo</CardTitle>
@@ -70,19 +158,14 @@ export default async function StudentDetailsPage({
                 priority
               />
             </div>
-
-            <p className="mt-3 text-xs text-muted-foreground">
-              Photo preview (URL-based). Later we can add upload.
-            </p>
           </CardContent>
         </Card>
 
-        {/* Quick facts */}
+        {/* Quick Info */}
         <Card className="shadow-none lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Quick Info</CardTitle>
           </CardHeader>
-
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <div>
               <p className="text-xs text-muted-foreground">Phone</p>
@@ -101,7 +184,7 @@ export default async function StudentDetailsPage({
 
             <div>
               <p className="text-xs text-muted-foreground">Date of Birth</p>
-              <p className="text-sm font-medium">{s.dateOfBirth}</p>
+              <p className="text-sm font-medium">{formatDate(s.dateOfBirth)}</p>
             </div>
 
             <div className="sm:col-span-2">
@@ -112,14 +195,13 @@ export default async function StudentDetailsPage({
         </Card>
       </div>
 
-      {/* Next steps placeholders (we'll build step-by-step) */}
+      {/* Details cards */}
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Guardian */}
         <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Guardian</CardTitle>
           </CardHeader>
-
           <CardContent className="space-y-4">
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Name</p>
@@ -155,7 +237,6 @@ export default async function StudentDetailsPage({
           <CardHeader>
             <CardTitle className="text-base">Academic</CardTitle>
           </CardHeader>
-
           <CardContent className="space-y-4">
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Qualification</p>
@@ -175,13 +256,6 @@ export default async function StudentDetailsPage({
                 </p>
               </div>
             </div>
-
-            <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-xs text-muted-foreground">
-                Tip: Later we can support multiple education records
-                (SSC/HSC/etc).
-              </p>
-            </div>
           </CardContent>
         </Card>
 
@@ -190,74 +264,60 @@ export default async function StudentDetailsPage({
           <CardHeader>
             <CardTitle className="text-base">Identification</CardTitle>
           </CardHeader>
-
           <CardContent className="space-y-4">
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">NID / Birth ID</p>
               <p className="break-all text-sm font-medium">{s.nidOrBirthId}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-lg border p-3">
-                <p className="text-xs text-muted-foreground">Verification</p>
-                <p className="mt-1 text-sm font-medium">Not Verified</p>
-              </div>
-
-              <div className="rounded-lg border p-3">
-                <p className="text-xs text-muted-foreground">Last Updated</p>
-                <p className="mt-1 text-sm font-medium">—</p>
-              </div>
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <p className="text-xs text-muted-foreground">
+                Verification feature can be added later (verifiedBy +
+                verifiedAt).
+              </p>
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">Document Pending</Badge>
-              <Badge variant="outline">Manual Check</Badge>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Later we’ll add “Verify ID” action (SUPER_ADMIN) and store
-              verifiedBy + verifiedAt.
-            </p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Enrollments chips (your preferred design) */}
       <Card className="shadow-none">
+        <CardHeader>
+          <CardTitle className="text-base">Enrollments</CardTitle>
+        </CardHeader>
         <CardContent>
-          {data.enrollments.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
+          {enrollments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
               No enrollments found.
-            </div>
+            </p>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {data.enrollments.map((en) => {
+              {enrollments.map((en) => {
                 const running = en.status === "RUNNING";
+                const courseName = en.course?.name ?? "Unknown course";
 
                 return (
                   <div
                     key={en.id}
                     className="flex items-center gap-2 rounded-full border bg-muted/40 px-3 py-1.5 text-sm"
                   >
-                    {/* Course name */}
-                    <span className="font-medium">{en.courseName}</span>
+                    <span className="font-medium">{courseName}</span>
 
-                    {/* Status badge */}
                     <Badge
                       variant={running ? "default" : "secondary"}
                       className="rounded-full text-xs"
                     >
                       {running ? "Running" : "Completed"}
                     </Badge>
+
+                    <span className="text-xs text-muted-foreground">
+                      {en.batchName}
+                    </span>
                   </div>
                 );
               })}
             </div>
           )}
-
-          <p className="mt-4 text-xs text-muted-foreground">
-            A student can enroll in multiple courses. Enrollment logic will be
-            handled in Admission flow.
-          </p>
         </CardContent>
       </Card>
     </div>

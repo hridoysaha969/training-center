@@ -5,12 +5,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
-import { courses } from "@/config/courses";
 import {
   admissionSchema,
   type AdmissionInput,
 } from "@/lib/validators/admission";
-import { checkDuplicateNid } from "@/data/mock-duplicates";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
