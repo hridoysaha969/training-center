@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
 
         await connectDB();
 
-        const admin = await Admin.findOne({ email });
+        const admin = await Admin.findOne({ email }).select("+password");
         if (!admin) return null;
         if (!admin.isActive) return null;
 

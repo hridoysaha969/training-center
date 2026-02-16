@@ -79,7 +79,7 @@ export default function AddAdminDialog({
     try {
       setSubmitting(true);
 
-      const res = await fetch("/api/admins", {
+      const res = await fetch("/api/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

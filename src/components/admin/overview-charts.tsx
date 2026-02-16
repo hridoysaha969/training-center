@@ -14,20 +14,22 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
-const overviewChartData = [
-  { month: "Sep", credit: 42000, debit: 28000, admissions: 18 },
-  { month: "Oct", credit: 46000, debit: 30000, admissions: 22 },
-  { month: "Nov", credit: 38000, debit: 25000, admissions: 16 },
-  { month: "Dec", credit: 52000, debit: 34000, admissions: 28 },
-  { month: "Jan", credit: 61000, debit: 42000, admissions: 31 },
-  { month: "Feb", credit: 56000, debit: 36000, admissions: 26 },
-];
+
 
 function Taka(v: number) {
   return `৳ ${v.toLocaleString("en-US")}`;
 }
 
-export default function OverviewCharts() {
+export default function OverviewCharts({ charts }: { charts: any }) {
+  const overviewChartData = charts
+    ? charts.cashInOutLast6Months.map((item: any, index: number) => ({
+        month: item.month,
+        credit: item.credit,
+        debit: item.debit,
+        admissions: charts.admissionsLast6Months[index]?.count || 0,
+      }))
+    : [];
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {/* Cash In vs Cash Out */}
@@ -56,11 +58,13 @@ export default function OverviewCharts() {
               <Bar
                 dataKey="credit"
                 name="Cash In (Credit)"
+                fill="#4DA3F2"
                 radius={[6, 6, 0, 0]}
               />
               <Bar
                 dataKey="debit"
                 name="Cash Out (Debit)"
+                fill="#6C63F6"
                 radius={[6, 6, 0, 0]}
               />
             </BarChart>

@@ -84,7 +84,7 @@ export async function POST(req: Request) {
   // Who can create?
   // - SUPER_ADMIN can create any role
   // - ADMIN can create STAFF only (recommended)
-  const creator = await requireRole(["SUPER_ADMIN", "ADMIN"]);
+  const creator = await requireRole(["SUPER_ADMIN"]);
   if (!creator) {
     return NextResponse.json(
       { success: false, message: "Unauthorized" },

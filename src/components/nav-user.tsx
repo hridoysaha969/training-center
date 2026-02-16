@@ -26,6 +26,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Session } from "next-auth";
+import { signOut } from "next-auth/react";
 
 type AuthUser = Session["user"] & {
   role?: "SUPER_ADMIN" | "ADMIN" | "STAFF";
@@ -37,6 +38,13 @@ type NavUserProps = {
 export function NavUser({ user }: NavUserProps) {
   if (!user) return null;
   const { isMobile } = useSidebar();
+
+  const handleLogout = async () => {
+    await signOut({
+      callbackUrl: "/admin/login",
+      redirect: true,
+    });
+  };
 
   return (
     <SidebarMenu>
@@ -89,17 +97,9 @@ export function NavUser({ user }: NavUserProps) {
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out
             </DropdownMenuItem>

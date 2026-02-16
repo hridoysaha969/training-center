@@ -69,12 +69,12 @@ function MetricCard({
   );
 }
 
-const KpiCard = () => {
+const KpiCard = ({ kpis, deltas }: { kpis: any; deltas: any }) => {
   const stats = {
-    monthlyAdmissions: 24,
-    monthlyCashPaid: 72000,
-    monthlyInvestment: 9500,
-    monthlyRevenue: 62500,
+    monthlyAdmissions: kpis?.monthlyAdmissionsCount || 0,
+    monthlyCashPaid: kpis?.monthlyCashIn || 0,
+    monthlyInvestment: kpis?.monthlyCashOut || 0,
+    monthlyRevenue: kpis?.monthlyRevenue || 0,
   };
 
   return (
@@ -82,21 +82,21 @@ const KpiCard = () => {
       <MetricCard
         title="Admissions"
         value={`${stats.monthlyAdmissions.toLocaleString("en-US")}`}
-        delta={12.4}
+        delta={deltas?.admissions ?? 0}
         icon={<Users size={18} />}
       />
 
       <MetricCard
         title="Cash Paid"
         value={`৳ ${stats.monthlyCashPaid.toLocaleString("en-US")}`}
-        delta={6.2}
+        delta={deltas?.cashIn ?? 0}
         icon={<Wallet size={18} />}
       />
 
       <MetricCard
         title="Investment"
         value={`৳ ${stats.monthlyInvestment.toLocaleString("en-US")}`}
-        delta={5.3}
+        delta={deltas?.cashOut ?? 0}
         icon={<Landmark size={18} />}
         invertTrend
       />
@@ -104,7 +104,7 @@ const KpiCard = () => {
       <MetricCard
         title="Revenue"
         value={`৳ ${stats.monthlyRevenue.toLocaleString("en-US")}`}
-        delta={17.2}
+        delta={deltas?.revenue ?? 0}
         icon={<TrendingUp size={18} />}
       />
     </div>
