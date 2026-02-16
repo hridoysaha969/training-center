@@ -8,7 +8,7 @@ import { connectDB } from "@/lib/mongodb";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { roll: string } },
+  { params }: { params: Promise<{ roll: string }> },
 ) {
   //   const admin = await requireRole(["SUPER_ADMIN", "ADMIN", "STAFF"]);
   //   if (!admin) {
