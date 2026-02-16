@@ -14,6 +14,7 @@ import {
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/cn";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -28,8 +29,35 @@ function taka(n: number) {
   return `৳ ${n.toLocaleString("en-US")}`;
 }
 
+export function truncateText(text: string, maxLength: number): string {
+  if (!text) return "";
+  if (text.length <= maxLength) return text;
+
+  return text.slice(0, maxLength).trimEnd() + "…";
+}
+
 export default function OverviewTables() {
   const router = useRouter();
+
+  const [latestTransactions, setLatestTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/admin/transactions?page=1&limit=10", {
+          cache: "no-store",
+        });
+        const json = await res.json();
+        setLatestTransactions(json?.success ? json.data.items : []);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+  }, []);
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -113,7 +141,11 @@ export default function OverviewTables() {
         </CardHeader>
 
         <CardContent>
-          {latestTransactions.length === 0 ? (
+          {loading ? (
+            <div className="py-10 text-center text-sm text-muted-foreground">
+              Loading transactions...
+            </div>
+          ) : latestTransactions.length === 0 ? (
             <div className="py-10 text-center text-sm text-muted-foreground">
               No transactions yet.
             </div>
@@ -125,9 +157,7 @@ export default function OverviewTables() {
                     <TableHead>Type</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Date</TableHead>
-                    <TableHead className="hidden xl:table-cell">
-                      Method
-                    </TableHead>
+
                     <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -156,11 +186,11 @@ export default function OverviewTables() {
                           {row.type === "CREDIT" ? "Cash In" : "Cash Out"}
                         </span>
                       </TableCell>
-                      <TableCell className="font-medium">{row.title}</TableCell>
-                      <TableCell>{formatDate(row.date)}</TableCell>
-                      <TableCell className="hidden xl:table-cell">
-                        {row.method}
+                      <TableCell className="font-medium">
+                        {truncateText(row.title, 20)}
                       </TableCell>
+                      <TableCell>{formatDate(row.date)}</TableCell>
+
                       <TableCell className="text-right">
                         {taka(row.amount)}
                       </TableCell>

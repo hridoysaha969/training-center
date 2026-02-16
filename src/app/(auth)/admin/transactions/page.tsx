@@ -11,7 +11,7 @@ export default function TransactionsPage() {
         </p>
       </div>
 
-      <TransactionsTable rows={transactionsMock} />
+      <TransactionsTable />
     </div>
   );
 }

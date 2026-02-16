@@ -2,7 +2,7 @@
 
 import { TransactionRow, TxMethod, TxType } from "@/data/mock-tables";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "../ui/input";
 import {
   Select,
@@ -21,7 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { Badge } from "../ui/badge";
 import { cn } from "@/lib/cn";
 
 function formatDate(iso: string) {
@@ -72,26 +71,88 @@ function inRange(dateISO: string, from?: string, to?: string) {
   return true;
 }
 
-export default function TransactionsTable({
-  rows,
-}: {
-  rows: TransactionRow[];
-}) {
+type TxRow = {
+  id: string;
+  type: "CREDIT" | "DEBIT";
+  title: string;
+  note?: string | null;
+  date: string; // ISO
+  method?: string | null;
+  amount: number;
+};
+
+type Pagination = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+export default function TransactionsTable() {
   const router = useRouter();
 
   const [q, setQ] = useState("");
-  const [type, setType] = useState<"ALL" | TxType>("ALL");
-  const [method, setMethod] = useState<"ALL" | TxMethod>("ALL");
+  const [type, setType] = useState<"ALL" | "CREDIT" | "DEBIT">("ALL");
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
 
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  const methodOptions = useMemo(() => {
-    const set = new Set(rows.map((r) => r.method));
-    return ["ALL", ...Array.from(set)] as const;
-  }, [rows]);
+  // server data
+  const [rows, setRows] = useState<TxRow[]>([]);
+  const [meta, setMeta] = useState<Pagination>({
+    page: 1,
+    limit: pageSize,
+    totalItems: 0,
+    totalPages: 1,
+  });
+
+  const [loading, setLoading] = useState(true);
+
+  // fetch whenever page changes (simple)
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setLoading(true);
+
+        const res = await fetch(
+          `/api/admin/transactions?page=${page}&limit=${pageSize}`,
+          { cache: "no-store" },
+        );
+
+        const json = await res.json();
+
+        if (!json?.success) {
+          setRows([]);
+          setMeta({ page, limit: pageSize, totalItems: 0, totalPages: 1 });
+          return;
+        }
+
+        // API: { data: { items, pagination } }
+        const items = (json.data.items || []).map((t: any) => ({
+          id: String(t._id ?? t.id),
+          type: t.type,
+          title: t.title ?? "-",
+          note: t.note ?? null,
+          date: t.date,
+          amount: Number(t.amount ?? 0),
+        }));
+
+        setRows(items);
+        setMeta({
+          page: json.data.pagination.page,
+          limit: json.data.pagination.limit,
+          totalItems: json.data.pagination.totalItems,
+          totalPages: json.data.pagination.totalPages,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+  }, [page]);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -99,18 +160,20 @@ export default function TransactionsTable({
     return rows.filter((r) => {
       const matchQuery =
         !query ||
-        r.id.toLowerCase().includes(query) ||
         r.title.toLowerCase().includes(query) ||
-        (r.note ?? "").toLowerCase().includes(query) ||
-        r.method.toLowerCase().includes(query);
+        (r.note || "").toLowerCase().includes(query) ||
+        r.id.toLowerCase().includes(query);
 
       const matchType = type === "ALL" ? true : r.type === type;
-      const matchMethod = method === "ALL" ? true : r.method === method;
-      const matchDate = inRange(r.date, from || undefined, to || undefined);
 
-      return matchQuery && matchType && matchMethod && matchDate;
+      // optional local date range filter (only on current page)
+      const d = new Date(r.date).getTime();
+      const fromOk = !from ? true : d >= new Date(from).getTime();
+      const toOk = !to ? true : d <= new Date(`${to}T23:59:59.999`).getTime();
+
+      return matchQuery && matchType && fromOk && toOk;
     });
-  }, [rows, q, type, method, from, to]);
+  }, [rows, q, type, from, to]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   if (page > totalPages) setPage(totalPages);
@@ -139,7 +202,6 @@ export default function TransactionsTable({
   const reset = () => {
     setQ("");
     setType("ALL");
-    setMethod("ALL");
     setFrom("");
     setTo("");
     setPage(1);
@@ -175,25 +237,6 @@ export default function TransactionsTable({
                 <SelectItem value="ALL">All Types</SelectItem>
                 <SelectItem value="CREDIT">Cash In (Credit)</SelectItem>
                 <SelectItem value="DEBIT">Cash Out (Debit)</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={method}
-              onValueChange={(v) => {
-                setMethod(v as any);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Method" />
-              </SelectTrigger>
-              <SelectContent>
-                {methodOptions.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m === "ALL" ? "All Methods" : m}
-                  </SelectItem>
-                ))}
               </SelectContent>
             </Select>
 
