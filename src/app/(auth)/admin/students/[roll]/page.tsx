@@ -64,9 +64,9 @@ function formatDate(d: any) {
 export default async function StudentDetailsPage({
   params,
 }: {
-  params: { roll: string };
+  params: Promise<{ roll: string }>;
 }) {
-  const roll = (await params).roll?.trim();
+  const { roll } = await params;
   // Server-side fetch from your own API (keeps RBAC consistent)
   const res = await fetch(
     `${process.env.NEXTAUTH_URL}/api/admin/students/${encodeURIComponent(
