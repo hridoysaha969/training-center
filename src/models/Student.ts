@@ -67,14 +67,14 @@ const StudentSchema = new Schema<StudentDoc>(
 
     certificateId: { type: String, trim: true },
     certificateIssuedAt: { type: Date },
-    certificateIssuedBy: { type: Schema.Types.ObjectId, ref: "AdminUser" },
+    certificateIssuedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
 
     createdBy: {
       type: Schema.Types.ObjectId,
-      ref: "AdminUser",
+      ref: "Admin",
       required: true,
     },
-    updatedBy: { type: Schema.Types.ObjectId, ref: "AdminUser" },
+    updatedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
   },
   { timestamps: true },
 );

@@ -26,7 +26,7 @@ const EnrollmentSchema = new Schema<EnrollmentDoc>(
     },
     createdBy: {
       type: Schema.Types.ObjectId,
-      ref: "AdminUser",
+      ref: "Admin",
       required: true,
     },
   },

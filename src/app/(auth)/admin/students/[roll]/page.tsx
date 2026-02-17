@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import StudentPageAction from "@/components/admin/student-page-action";
+import { requireAdmin } from "@/lib/rbac";
 
 type StudentDetailsResponse = {
   success: boolean;
@@ -67,7 +69,7 @@ export default async function StudentDetailsPage({
   params: Promise<{ roll: string }>;
 }) {
   const { roll } = await params;
-  // Server-side fetch from your own API (keeps RBAC consistent)
+
   const res = await fetch(
     `${process.env.NEXTAUTH_URL}/api/admin/students/${encodeURIComponent(
       roll,
@@ -96,6 +98,43 @@ export default async function StudentDetailsPage({
   const enrollments = json.data!.enrollments;
 
   const certificateIssued = !!s.certificateId;
+
+  const admin = await requireAdmin();
+  const canEdit = admin?.role === "SUPER_ADMIN";
+
+  function toInputDate(v: string | Date) {
+    const d = new Date(v);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  const initialEdit = {
+    roll: s.roll,
+    admissionDate: formatDate(s.admissionDate),
+    batches: enrollments.map((e) => e.batchName),
+    certificateId: s.certificateId,
+
+    fullName: s.fullName,
+    dateOfBirth: toInputDate(s.dateOfBirth),
+    gender: s.gender,
+    phone: s.phone,
+    email: s.email || "",
+    presentAddress: s.presentAddress,
+    nidOrBirthId: s.nidOrBirthId,
+    photoUrl: s.photoUrl,
+
+    guardianName: s.guardian.name,
+    guardianRelation: s.guardian.relation,
+    guardianPhone: s.guardian.phone,
+    guardianOccupation: s.guardian.occupation,
+    guardianAddress: s.guardian.address,
+
+    qualification: s.academic.qualification,
+    passingYear: s.academic.passingYear,
+    instituteName: s.academic.instituteName,
+  };
 
   return (
     <div className="space-y-6 p-4">
@@ -126,16 +165,12 @@ export default async function StudentDetailsPage({
             </span>
           </p>
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline">
-            <Link href="/admin/students">Back</Link>
-          </Button>
-
-          {/* Later: role protected actions */}
-          <Button variant="outline">Edit</Button>
-          <Button>Print</Button>
-        </div>
+        <StudentPageAction
+          roll={s.roll}
+          initialEdit={initialEdit}
+          canEdit={canEdit}
+        />{" "}
+        {/* Action buttons (Edit, Print, etc.) */}
       </div>
 
       <Separator />

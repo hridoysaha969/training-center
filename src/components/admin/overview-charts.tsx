@@ -16,8 +16,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 
 
-function Taka(v: number) {
-  return `৳ ${v.toLocaleString("en-US")}`;
+function taka(n: number | undefined | null) {
+  if (typeof n !== "number") return "৳ 0";
+  return `৳ ${n.toLocaleString("en-US")}`;
 }
 
 export default function OverviewCharts({ charts }: { charts: any }) {
@@ -51,7 +52,7 @@ export default function OverviewCharts({ charts }: { charts: any }) {
                 tickFormatter={(v) => `${Math.round(v / 1000)}k`}
               />
               <Tooltip
-                formatter={(value) => Taka(Number(value))}
+                formatter={(value) => taka(Number(value))}
                 labelStyle={{ fontWeight: 600 }}
               />
               <Legend />

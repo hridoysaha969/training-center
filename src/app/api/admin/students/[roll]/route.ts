@@ -10,13 +10,13 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ roll: string }> },
 ) {
-  //   const admin = await requireRole(["SUPER_ADMIN", "ADMIN", "STAFF"]);
-  //   if (!admin) {
-  //     return NextResponse.json(
-  //       { success: false, message: "Unauthorized" },
-  //       { status: 401 }
-  //     );
-  //   }
+  // const admin = await requireRole(["SUPER_ADMIN", "ADMIN", "STAFF"]);
+  // if (!admin) {
+  //   return NextResponse.json(
+  //     { success: false, message: "Unauthorized" },
+  //     { status: 401 },
+  //   );
+  // }
 
   const roll = (await params).roll?.trim();
   if (!roll) {
@@ -25,6 +25,7 @@ export async function GET(
       { status: 400 },
     );
   }
+  console.log("Fetching details for roll:", roll);
 
   await connectDB();
 

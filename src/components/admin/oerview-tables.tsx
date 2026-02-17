@@ -15,6 +15,7 @@ import { Badge } from "../ui/badge";
 import { cn } from "@/lib/cn";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import LatestAdmissionsCard from "./latest-admission";
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -62,74 +63,7 @@ export default function OverviewTables() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {/* Latest Admissions */}
-      <Card className="shadow-2xl">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Latest Admissions</CardTitle>
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/admin/students">View all</Link>
-          </Button>
-        </CardHeader>
-
-        <CardContent>
-          {latestAdmissions.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">
-              No admissions yet.
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Roll</TableHead>
-                    <TableHead>Student</TableHead>
-                    <TableHead className="hidden xl:table-cell">
-                      Course
-                    </TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Fee</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {latestAdmissions.map((row) => (
-                    <TableRow
-                      key={row.roll}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => router.push(`/admin/students/${row.roll}`)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter")
-                          router.push(`/admin/students/${row.roll}`);
-                      }}
-                      className="cursor-pointer transition-colors hover:bg-muted/60"
-                    >
-                      <TableCell className="font-medium">{row.roll}</TableCell>
-                      <TableCell>{row.name}</TableCell>
-                      <TableCell className="hidden xl:table-cell">
-                        {row.course}
-                      </TableCell>
-                      <TableCell>{formatDate(row.date)}</TableCell>
-                      <TableCell className="text-right">
-                        {taka(row.fee)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Badge
-                          variant={
-                            row.status === "PAID" ? "default" : "secondary"
-                          }
-                        >
-                          {row.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <LatestAdmissionsCard />
 
       {/* Latest Transactions */}
       <Card className="shadow-none">

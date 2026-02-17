@@ -1,7 +1,7 @@
 "use client";
 import { StudentRow } from "@/data/mock-tables";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "../ui/input";
 import {
   Select,
@@ -20,6 +20,24 @@ import {
   TableRow,
 } from "../ui/table";
 import { Badge } from "../ui/badge";
+
+type StudentItem = {
+  _id: string;
+  roll: string;
+  fullName: string;
+  gender: "MALE" | "FEMALE" | "OTHER";
+  phone: string;
+  email?: string;
+  nidOrBirthId: string;
+  admissionDate: string;
+};
+
+type Pagination = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+};
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -57,47 +75,87 @@ function getPagination(current: number, total: number) {
   return pages;
 }
 
-export default function StudentsTable({ rows }: { rows: StudentRow[] }) {
+export default function StudentsTable() {
   const router = useRouter();
 
+  // UI filters (local)
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState<"ALL" | "PAID" | "DUE">("ALL");
-  const [course, setCourse] = useState<string>("ALL");
+  const [gender, setGender] = useState<"ALL" | "MALE" | "FEMALE" | "OTHER">(
+    "ALL",
+  );
 
+  // pagination state (drives API)
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const limit = 10;
 
-  const courseOptions = useMemo(() => {
-    const set = new Set(rows.map((r) => r.course));
-    return ["ALL", ...Array.from(set)];
-  }, [rows]);
+  // server data
+  const [items, setItems] = useState<StudentItem[]>([]);
+  const [meta, setMeta] = useState<Pagination>({
+    page: 1,
+    limit,
+    totalItems: 0,
+    totalPages: 1,
+  });
 
+  const [loading, setLoading] = useState(true);
+
+  // fetch whenever page changes
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setLoading(true);
+
+        const res = await fetch(
+          `/api/admin/students?page=${page}&limit=${limit}`,
+          {
+            cache: "no-store",
+          },
+        );
+
+        const json = await res.json();
+
+        if (!json?.success) {
+          setItems([]);
+          setMeta({ page, limit, totalItems: 0, totalPages: 1 });
+          return;
+        }
+
+        setItems(json.data.items);
+        setMeta(json.data.pagination);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+  }, [page]);
+
+  // local filtering (simple: filters current page)
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
 
-    return rows.filter((r) => {
+    return items.filter((r) => {
+      const roll = String(r.roll ?? "").toLowerCase();
+      const name = String(r.fullName ?? "").toLowerCase();
+      const phone = String(r.phone ?? "").toLowerCase();
+      const nid = String(r.nidOrBirthId ?? "").toLowerCase();
+      const email = String(r.email ?? "").toLowerCase();
+
       const matchQuery =
         !query ||
-        r.roll.toLowerCase().includes(query) ||
-        r.name.toLowerCase().includes(query) ||
-        r.phone.toLowerCase().includes(query);
+        roll.includes(query) ||
+        name.includes(query) ||
+        phone.includes(query) ||
+        nid.includes(query) ||
+        email.includes(query);
 
-      const matchStatus = status === "ALL" ? true : r.status === status;
-      const matchCourse = course === "ALL" ? true : r.course === course;
+      const matchGender = gender === "ALL" ? true : r.gender === gender;
 
-      return matchQuery && matchStatus && matchCourse;
+      return matchQuery && matchGender;
     });
-  }, [rows, q, status, course]);
+  }, [items, q, gender]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-
-  // reset page if filters reduce results
-  if (page > totalPages) setPage(totalPages);
-
-  const paged = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, page]);
+  const totalPages = meta.totalPages;
 
   const pages = useMemo(
     () => getPagination(page, totalPages),
@@ -115,44 +173,26 @@ export default function StudentsTable({ rows }: { rows: StudentRow[] }) {
               setQ(e.target.value);
               setPage(1);
             }}
-            placeholder="Search by roll, name, phone..."
+            placeholder="Search by roll, name, phone, NID, email..."
             className="sm:max-w-xs"
           />
 
           <div className="flex gap-2">
             <Select
-              value={status}
+              value={gender}
               onValueChange={(v) => {
-                setStatus(v as any);
+                setGender(v as any);
                 setPage(1);
               }}
             >
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Gender" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">All Status</SelectItem>
-                <SelectItem value="PAID">Paid</SelectItem>
-                <SelectItem value="DUE">Due</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={course}
-              onValueChange={(v) => {
-                setCourse(v);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-50">
-                <SelectValue placeholder="Course" />
-              </SelectTrigger>
-              <SelectContent>
-                {courseOptions.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c === "ALL" ? "All Courses" : c}
-                  </SelectItem>
-                ))}
+                <SelectItem value="ALL">All</SelectItem>
+                <SelectItem value="MALE">Male</SelectItem>
+                <SelectItem value="FEMALE">Female</SelectItem>
+                <SelectItem value="OTHER">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -160,14 +200,13 @@ export default function StudentsTable({ rows }: { rows: StudentRow[] }) {
 
         <div className="flex items-center justify-between gap-2 lg:justify-end">
           <p className="text-sm text-muted-foreground">
-            {filtered.length} result{filtered.length === 1 ? "" : "s"}
+            {meta.totalItems} result{meta.totalItems === 1 ? "" : "s"}
           </p>
           <Button
             variant="outline"
             onClick={() => {
               setQ("");
-              setStatus("ALL");
-              setCourse("ALL");
+              setGender("ALL");
               setPage(1);
             }}
           >
@@ -184,25 +223,33 @@ export default function StudentsTable({ rows }: { rows: StudentRow[] }) {
               <TableHead>Roll</TableHead>
               <TableHead>Student</TableHead>
               <TableHead className="hidden lg:table-cell">Phone</TableHead>
-              <TableHead className="hidden xl:table-cell">Course</TableHead>
+              <TableHead className="hidden xl:table-cell">Gender</TableHead>
+              <TableHead className="hidden xl:table-cell">NID/Birth</TableHead>
               <TableHead>Admission</TableHead>
-              <TableHead className="text-right">Fee</TableHead>
-              <TableHead className="text-right">Status</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
-            {paged.length === 0 ? (
+            {loading ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={6}
+                  className="py-10 text-center text-sm text-muted-foreground"
+                >
+                  Loading students...
+                </TableCell>
+              </TableRow>
+            ) : filtered.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
                   className="py-10 text-center text-sm text-muted-foreground"
                 >
                   No students found.
                 </TableCell>
               </TableRow>
             ) : (
-              paged.map((r) => (
+              filtered.map((r) => (
                 <TableRow
                   key={r.roll}
                   role="button"
@@ -215,22 +262,17 @@ export default function StudentsTable({ rows }: { rows: StudentRow[] }) {
                   className="cursor-pointer transition-colors hover:bg-muted/60"
                 >
                   <TableCell className="font-medium">{r.roll}</TableCell>
-                  <TableCell>{r.name}</TableCell>
+                  <TableCell>{r.fullName}</TableCell>
                   <TableCell className="hidden lg:table-cell">
                     {r.phone}
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
-                    {r.course}
+                    {r.gender}
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    {r.nidOrBirthId}
                   </TableCell>
                   <TableCell>{formatDate(r.admissionDate)}</TableCell>
-                  <TableCell className="text-right">{taka(r.fee)}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge
-                      variant={r.status === "PAID" ? "default" : "secondary"}
-                    >
-                      {r.status}
-                    </Badge>
-                  </TableCell>
                 </TableRow>
               ))
             )}

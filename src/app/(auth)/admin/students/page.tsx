@@ -13,7 +13,7 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      <StudentsTable rows={studentsMock} />
+      <StudentsTable />
     </div>
   );
 }

@@ -559,19 +559,19 @@ export default function AdmissionPage() {
                     </FormDescription>
                     <FormMessage />
 
-                    <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                      <div className="rounded-xl border bg-muted/30 p-3 text-xs text-muted-foreground">
+                    <div className="mt-3 grid gap-3 lg:grid-cols-4">
+                      {/* <div className="rounded-xl border bg-muted/30 p-3 text-xs text-muted-foreground">
                         Tip: Use a direct image URL. If preview fails, the URL
                         may not allow hotlinking.
-                      </div>
+                      </div> */}
 
-                      <div className="overflow-hidden rounded-xl border bg-muted">
+                      <div className="overflow-hidden col-span-1 rounded-xl border bg-muted">
                         {photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={photoUrl}
                             alt="Student preview"
-                            className="h-48 w-full object-cover"
+                            className="h-full w-full object-cover"
                           />
                         ) : (
                           <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">

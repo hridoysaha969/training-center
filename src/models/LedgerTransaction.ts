@@ -31,7 +31,7 @@ const LedgerTransactionSchema = new Schema<LedgerTransactionDoc>(
 
     createdBy: {
       type: Schema.Types.ObjectId,
-      ref: "AdminUser",
+      ref: "Admin",
       required: true,
     },
 

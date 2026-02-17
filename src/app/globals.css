@@ -180,3 +180,37 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+
+/* Print Page Style */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Only show the admit card scope */
+  .print-scope,
+  .print-scope * {
+    visibility: visible;
+  }
+
+  /* Place it at the top-left for perfect print */
+  .print-scope {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* Keep colors in print */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
