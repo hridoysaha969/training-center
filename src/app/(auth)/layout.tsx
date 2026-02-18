@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/admin/admin-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import ThemeToggle from "@/components/ui/theme-toggle";
+import SessionProviderWrapper from "@/contexts/SessionProviderWrapper";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -14,15 +15,16 @@ export default async function AdminLayout({
 }) {
   const session = await getServerSession(authOptions);
 
-
   return (
     <SidebarProvider>
-      <AppSidebar user={session?.user} />
+      <SessionProviderWrapper>
+        <AppSidebar user={session?.user} />
 
-      <div className="flex-1">
-        {session?.user && <AdminHeader />}
-        {children}
-      </div>
+        <div className="flex-1">
+          <AdminHeader />
+          {children}
+        </div>
+      </SessionProviderWrapper>
     </SidebarProvider>
   );
 }

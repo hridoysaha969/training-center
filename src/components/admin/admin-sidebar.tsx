@@ -22,6 +22,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { Session } from "next-auth";
+import { useSession } from "next-auth/react";
 
 const sidebarLinks = {
   operations: [
@@ -81,8 +82,13 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 };
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
-  if (!user) {
-    return null; // or a placeholder/sidebar skeleton
+  const { data: session, status } = useSession();
+
+  if (status === "loading") {
+    return null; // or a loading spinner
+  }
+  if (!session || !session.user) {
+    return null; // or a placeholder for unauthenticated users
   }
 
   return (
