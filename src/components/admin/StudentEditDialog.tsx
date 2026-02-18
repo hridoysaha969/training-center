@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 type EditStudentForm = {
   // readonly
@@ -75,6 +77,7 @@ export function StudentEditDialog({
   const [open, setOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [form, setForm] = React.useState<EditStudentForm>(initial);
+  const router = useRouter();
 
   React.useEffect(() => {
     // keep in sync when page data changes
@@ -99,11 +102,29 @@ export function StudentEditDialog({
   }
 
   async function handleSave() {
-    // UI-only behavior (later we will call API)
     setSaving(true);
     try {
-      onSave?.(form);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/students/${encodeURIComponent(form.roll)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        },
+      );
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        toast.error(json.message || "Failed to update");
+        return;
+      }
+
+      toast.success("Student updated successfully");
       setOpen(false);
+      router.refresh(); // reload server data
+    } catch (err) {
+      toast.error("Something went wrong");
     } finally {
       setSaving(false);
     }
@@ -292,7 +313,7 @@ export function StudentEditDialog({
 
                     <div className="rounded-xl border bg-muted/20 p-3">
                       <p className="text-xs text-muted-foreground">Preview</p>
-                      <div className="mt-2 aspect-7/9 w-35 overflow-hidden rounded-lg border bg-background">
+                      <div className="mt-2 aspect-7/8 w-35 overflow-hidden rounded-lg border bg-background">
                         {/* image preview: keep simple UI-only */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img

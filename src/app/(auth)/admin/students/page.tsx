@@ -1,5 +1,16 @@
 import StudentsTable from "@/components/admin/students-table";
-import { studentsMock } from "@/data/mock-tables";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Students | Admin | Excel Computer & IT Center",
+  description: "View and manage enrolled students.",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+};
+
 
 export default function StudentsPage() {
   return (

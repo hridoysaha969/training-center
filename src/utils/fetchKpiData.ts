@@ -21,7 +21,9 @@ type OverviewResponse = {
 
 export async function fetchOverviewData(): Promise<OverviewResponse | null> {
   try {
-    const res = await fetch("/api/admin/overview", { cache: "no-store" });
+    const res = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/overview`, {
+      cache: "no-store",
+    });
     const json = (await res.json()) as OverviewResponse;
 
     if (res.status === 401 || res.status === 403) {

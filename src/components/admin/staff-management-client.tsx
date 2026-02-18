@@ -50,6 +50,17 @@ import {
   Users,
 } from "lucide-react";
 import AddAdminDialog from "./add-admin-dialog";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 
 type AdminRole = "SUPER_ADMIN" | "ADMIN" | "STAFF";
 
@@ -97,6 +108,16 @@ export default function StaffManagementClient() {
   const [search, setSearch] = React.useState("");
   const [role, setRole] = React.useState<AdminRole | "ALL">("ALL");
 
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [selected, setSelected] = React.useState<{
+    _id: string;
+    name: string;
+    email: string;
+  } | null>(null);
+
+  const router = useRouter();
+
   async function fetchAll() {
     try {
       setLoading(true);
@@ -106,8 +127,13 @@ export default function StaffManagementClient() {
       if (role !== "ALL") qs.set("role", role);
 
       const [sRes, lRes] = await Promise.all([
-        fetch("/api/admin/summary", { cache: "no-store" }),
-        fetch(`/api/admin?${qs.toString()}`, { cache: "no-store" }),
+        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/summary`, {
+          cache: "no-store",
+        }),
+        fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin?${qs.toString()}`,
+          { cache: "no-store" },
+        ),
       ]);
 
       const sJson = await sRes.json().catch(() => null);
@@ -138,6 +164,41 @@ export default function StaffManagementClient() {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, role]);
+
+  async function handleDelete() {
+    if (!selected) return;
+
+    setDeletingId(selected._id);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/${encodeURIComponent(selected._id)}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        toast.error(json?.message || "Failed to delete admin user");
+        return;
+      }
+
+      toast.success("Admin user deleted");
+      setDeleteOpen(false);
+      setSelected(null);
+
+      // refresh list:
+      // If you fetch rows from parent -> call refetch()
+      // If you use router.refresh():
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-6xl p-4 sm:p-6 space-y-6">
@@ -370,7 +431,9 @@ export default function StaffManagementClient() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() =>
-                                toast.message("Edit UI: coming soon")
+                                toast.info(
+                                  "Edit feature will be implemented in the future.",
+                                )
                               }
                             >
                               Edit
@@ -385,13 +448,16 @@ export default function StaffManagementClient() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
-                              onClick={() =>
-                                toast.message(
-                                  "Activate/Deactivate UI: coming soon",
-                                )
-                              }
+                              onClick={() => {
+                                setSelected({
+                                  _id: r._id,
+                                  name: r.name,
+                                  email: r.email,
+                                });
+                                setDeleteOpen(true);
+                              }}
                             >
-                              {r.isActive ? "Deactivate" : "Activate"}
+                              Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -399,6 +465,49 @@ export default function StaffManagementClient() {
                     </TableRow>
                   ))
                 )}
+
+                <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete admin user?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove{" "}
+                        <span className="font-medium text-foreground">
+                          {selected?.name || "this user"}
+                        </span>{" "}
+                        and they will no longer be able to access the admin
+                        panel.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <div className="rounded-xl border bg-muted/40 p-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Name</span>
+                        <span className="font-medium">{selected?.name}</span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-muted-foreground">Email</span>
+                        <span className="font-medium">{selected?.email}</span>
+                      </div>
+                    </div>
+
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={!!deletingId}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleDelete();
+                        }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        disabled={!!deletingId}
+                      >
+                        {deletingId ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </TableBody>
             </Table>
           </div>

@@ -9,7 +9,6 @@ export default async function Page() {
     <>
       <Header />
       <WhyChooseUs />
-      {/* <TrustStats /> */}
       <Courses />
       <CTABanner />
       <Contact />

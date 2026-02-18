@@ -27,12 +27,11 @@ function MetricCard({
   const isPositive = typeof delta === "number" && delta > 0;
   const isNegative = typeof delta === "number" && delta < 0;
 
-  // Normal logic: positive = good (green)
-  // Inverted logic: negative = good (green)
+  
   const isGood = invertTrend ? isNegative : isPositive;
 
   return (
-    <Card className="shadow-xl">
+    <Card className="shadow-xl select-none">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}

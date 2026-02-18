@@ -473,10 +473,10 @@ export default function ReportsPage() {
                 </Table>
               </div>
 
-              <p className="mt-3 text-xs text-muted-foreground">
+              {/* <p className="mt-3 text-xs text-muted-foreground">
                 Later we’ll connect this to <code>/api/admin/transactions</code>{" "}
                 with pagination and filters.
-              </p>
+              </p> */}
             </CardContent>
           </Card>
         </TabsContent>

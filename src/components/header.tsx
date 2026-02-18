@@ -29,7 +29,7 @@ export default function Header() {
 
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <a
-                href="#contact"
+                href="/courses"
                 className="flex items-center gap-1 rounded-full bg-blue-600 px-8 py-3 text-base font-semibold text-white transition hover:bg-blue-700"
               >
                 আমাদের কোর্স ‍সমূহ

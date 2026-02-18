@@ -14,6 +14,7 @@ export default async function AdminLayout({
 }) {
   const session = await getServerSession(authOptions);
 
+
   return (
     <SidebarProvider>
       <AppSidebar user={session?.user} />

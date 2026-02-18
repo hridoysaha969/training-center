@@ -53,7 +53,10 @@ const OverView = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/admin/overview", { cache: "no-store" });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/overview`,
+          { cache: "no-store" },
+        );
         const json = (await res.json()) as OverviewResponse;
 
         if (res.status === 401 || res.status === 403) {

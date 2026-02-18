@@ -106,7 +106,7 @@ export default function StudentsTable() {
         setLoading(true);
 
         const res = await fetch(
-          `/api/admin/students?page=${page}&limit=${limit}`,
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/students?page=${page}&limit=${limit}`,
           {
             cache: "no-store",
           },

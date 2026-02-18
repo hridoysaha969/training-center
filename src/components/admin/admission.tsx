@@ -121,7 +121,9 @@ export default function AdmissionPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/admin/courses");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/courses`,
+        );
         const json = await res.json();
         if (res.ok && json?.success) setDbCourses(json.data);
         else toast.error(json?.message || "Failed to load courses");
@@ -156,7 +158,7 @@ export default function AdmissionPage() {
 
     try {
       const res = await fetch(
-        `/api/admin/students/exists?n=${encodeURIComponent(v)}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/students/exists?n=${encodeURIComponent(v)}`,
         { method: "GET" },
       );
 
@@ -200,11 +202,14 @@ export default function AdmissionPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch("/api/admin/admission", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/admission`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
+        },
+      );
 
       const json = await res.json().catch(() => null);
 

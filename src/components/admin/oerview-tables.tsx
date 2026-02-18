@@ -43,13 +43,17 @@ export default function OverviewTables() {
   const [latestTransactions, setLatestTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+
   useEffect(() => {
     const run = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/admin/transactions?page=1&limit=10", {
-          cache: "no-store",
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/transactions?page=1&limit=10`,
+          {
+            cache: "no-store",
+          },
+        );
         const json = await res.json();
         setLatestTransactions(json?.success ? json.data.items : []);
       } finally {
@@ -103,11 +107,11 @@ export default function OverviewTables() {
                       role="button"
                       tabIndex={0}
                       onClick={() =>
-                        router.push(`/admin/transactions/${row.id}`)
+                        router.push(`/admin/transactions/${row._id}`)
                       }
                       onKeyDown={(e) => {
                         if (e.key === "Enter")
-                          router.push(`/admin/transactions/${row.id}`);
+                          router.push(`/admin/transactions/${row._id}`);
                       }}
                       className={cn(
                         row.type === "CREDIT"

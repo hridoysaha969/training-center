@@ -5,6 +5,77 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { courses } from "@/data/cources";
 import { CheckCircle, Clock, Users } from "lucide-react";
+import { Metadata } from "next";
+
+// Example: replace this with your real DB / API call
+async function getCourse(slug: string) {
+  // Example API call
+  const course = courses.find((c) => c.id === slug);
+  return course || null;
+}
+
+type Props = {
+  params: {
+    slug: string;
+  };
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<Props["params"]>;
+}): Promise<Metadata> {
+  const paramsValue = await params;
+  const course = await getCourse(paramsValue.slug);
+
+  if (!course) {
+    return {
+      title: "Course Not Found | Excel Computer & IT Center",
+    };
+  }
+
+  return {
+    metadataBase: new URL("https://excelcomputerit.com"), // change later
+
+    title: `${course.title}`,
+    description:
+      course.subtitle ||
+      `শিখুন ${course.title} — ব্যবহারিক প্রশিক্ষণ ও বাস্তব প্রজেক্টের মাধ্যমে Excel Computer & IT Center-এ`,
+
+    alternates: {
+      canonical: `/courses/${paramsValue.slug}`,
+    },
+
+    openGraph: {
+      title: `${course.title} | Excel Computer & IT Center`,
+      description:
+        course.subtitle ||
+        `শিখুন ${course.title} — ব্যবহারিক প্রশিক্ষণ ও বাস্তব প্রজেক্টের মাধ্যমে Excel Computer & IT Center-এ`,
+      url: `/courses/${paramsValue}`,
+      siteName: "Excel Computer & IT Center",
+      images: [
+        {
+          url: "/og/home-og.png", // create this later in /public/og/
+          width: 1200,
+          height: 630,
+          alt: course.title,
+        },
+      ],
+      locale: "en_US",
+      type: "website",
+    },
+
+    twitter: {
+      card: "summary_large_image",
+      title: `${course.title}`,
+      description:
+        course.subtitle ||
+        `শিখুন ${course.title} — ব্যবহারিক প্রশিক্ষণ ও বাস্তব প্রজেক্টের মাধ্যমে Excel Computer & IT Center-এ`,
+      images: ["/og/home-og.png"],
+    },
+  };
+}
+
 
 export default async function CourseDetails({
   params,

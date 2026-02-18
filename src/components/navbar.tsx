@@ -181,7 +181,7 @@ export default function Navbar() {
 
             {/* CTA */}
             <a
-              href="#contact"
+              href="/admission"
               onClick={() => setIsOpen(false)}
               className="mt-6 inline-flex items-center justify-center rounded-2xl bg-linear-to-r from-blue-600 to-purple-600 py-3 font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
             >

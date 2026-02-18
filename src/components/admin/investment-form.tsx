@@ -80,16 +80,19 @@ export default function NewInvestmentPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch("/api/admin/investments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...values,
-          // keep empty strings clean
-          description: values.description?.trim() || undefined,
-          invoiceImageUrl: values.invoiceImageUrl?.trim() || undefined,
-        }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/investments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...values,
+            // keep empty strings clean
+            description: values.description?.trim() || undefined,
+            invoiceImageUrl: values.invoiceImageUrl?.trim() || undefined,
+          }),
+        },
+      );
 
       const json = await res.json().catch(() => null);
 

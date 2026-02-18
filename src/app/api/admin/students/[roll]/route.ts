@@ -6,6 +6,8 @@ import { Student } from "@/models/Student";
 import { Enrollment } from "@/models/Enrollment";
 import { connectDB } from "@/lib/mongodb";
 
+export const runtime = "nodejs";
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ roll: string }> },
@@ -78,5 +80,67 @@ export async function GET(
           : null,
       })),
     },
+  });
+}
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ roll: string }> },
+) {
+  const admin = await requireRole(["SUPER_ADMIN"]);
+  if (!admin) {
+    return NextResponse.json(
+      { success: false, message: "Forbidden" },
+      { status: 403 },
+    );
+  }
+
+  const { roll } = await params;
+  const body = await req.json();
+
+  await connectDB();
+
+  // Map payload → schema fields (adjust to your schema names)
+  const update = {
+    fullName: body.fullName,
+    dateOfBirth: body.dateOfBirth,
+    gender: body.gender,
+    phone: body.phone,
+    email: body.email,
+    presentAddress: body.presentAddress,
+    nidOrBirthId: body.nidOrBirthId,
+    photoUrl: body.photoUrl,
+
+    guardian: {
+      name: body.guardianName,
+      relation: body.guardianRelation,
+      phone: body.guardianPhone,
+      occupation: body.guardianOccupation,
+      address: body.guardianAddress,
+    },
+
+    academic: {
+      qualification: body.qualification,
+      passingYear: body.passingYear,
+      instituteName: body.instituteName,
+    },
+  };
+
+  const updated = await Student.findOneAndUpdate(
+    { roll },
+    { $set: update },
+    { new: true },
+  );
+
+  if (!updated) {
+    return NextResponse.json(
+      { success: false, message: "Student not found" },
+      { status: 404 },
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: "Student updated successfully",
   });
 }

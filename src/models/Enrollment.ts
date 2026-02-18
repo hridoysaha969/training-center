@@ -9,6 +9,13 @@ export type EnrollmentDoc = {
   batchName: string; // BC-2601-01
   startDate: Date;
   status: "RUNNING" | "COMPLETED";
+
+  // ✅ result (for certificate decision)
+  resultStatus: "PENDING" | "PASS" | "FAIL";
+  resultNote?: string;
+  resultUpdatedAt?: Date;
+  resultUpdatedBy?: Types.ObjectId;
+
   createdBy: Types.ObjectId;
 };
 
@@ -24,6 +31,18 @@ const EnrollmentSchema = new Schema<EnrollmentDoc>(
       enum: ["RUNNING", "COMPLETED"],
       default: "RUNNING",
     },
+
+    // ✅ new fields
+    resultStatus: {
+      type: String,
+      required: true,
+      enum: ["PENDING", "PASS", "FAIL"],
+      default: "PENDING",
+    },
+    resultNote: { type: String, trim: true },
+    resultUpdatedAt: { type: Date },
+    resultUpdatedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
+
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "Admin",

@@ -9,6 +9,7 @@ import { collectAdmissionData } from "@/lib/admission-collector";
 import { hashPayload } from "@/lib/admission-hash";
 import { resetAdmissionStorage } from "@/lib/admission-reset";
 import { useState } from "react";
+import { toast } from "sonner";
 
 const steps = [
   {
@@ -32,6 +33,7 @@ export default function AdmissionPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [step3Valid, setStep3Valid] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const isLast = currentStep === steps.length;
 
   const next = async () => {
@@ -42,7 +44,7 @@ export default function AdmissionPage() {
     }
 
     if (currentStep === steps.length) {
-      await finalSubmit(setSuccessOpen);
+      await finalSubmit(setSuccessOpen, setLoading);
       return;
     }
 
@@ -88,7 +90,7 @@ export default function AdmissionPage() {
 
           <button
             onClick={next}
-            disabled={isLast ? !step3Valid : false}
+            disabled={isLast ? loading || !step3Valid : false}
             className="px-6 py-2 rounded-xl bg-green-600 text-white disabled:opacity-40"
           >
             {isLast ? "সাবমিট" : "পরবর্তী"}
@@ -119,22 +121,47 @@ function StepPanel({ step, setStep3Valid }: any) {
   );
 }
 
-async function finalSubmit(setSuccessOpen: (open: boolean) => void) {
+async function finalSubmit(
+  setSuccessOpen: (open: boolean) => void,
+  setLoading: (loading: boolean) => void,
+): Promise<void> {
   const payload = collectAdmissionData();
   const fingerprint = await hashPayload(payload);
 
   const packet = { payload, fingerprint };
 
-  // ===== encrypted packet preview =====
-  console.log("ENCRYPTED ADMISSION PACKET");
-  console.log(JSON.stringify(packet, null, 2));
+  try {
+    setLoading(true);
+    const response = await fetch("/api/query-form", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(packet),
+    });
 
-  // ===== simulate server delay =====
-  await new Promise((r) => setTimeout(r, 900));
+    if (!response.ok) {
+      toast.error("দুঃখিত, আবেদন জমা দিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+      return;
+    }
 
-  // ===== reset storage =====
-  resetAdmissionStorage();
+    const result = await response.json();
+    if (result.success) {
+      // toast.success("আবেদন সফলভাবে জমা হয়েছে!");
+      // ===== reset storage =====
+      resetAdmissionStorage();
 
-  // ===== open success modal =====
-  setSuccessOpen(true);
+      // ===== open success modal =====
+      setSuccessOpen(true);
+    } else {
+      toast.error("দুঃখিত, আবেদন জমা দিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+      return;
+    }
+  } catch (error) {
+    console.error("Error submitting admission data:", error);
+    toast.error("দুঃখিত, আবেদন জমা দিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+    return;
+  } finally {
+    setLoading(false);
+  }
 }

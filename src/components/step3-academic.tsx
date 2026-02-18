@@ -176,9 +176,15 @@ function Step3Academic({
             <option className="bg-zinc-900 text-slate-200">
               কোন অভিজ্ঞতা নেই
             </option>
-            <option className="bg-zinc-900 text-slate-200">বেসিক জানি</option>
-            <option className="bg-zinc-900 text-slate-200">মাঝারি</option>
-            <option className="bg-zinc-900 text-slate-200">অভিজ্ঞ</option>
+            <option value="basic" className="bg-zinc-900 text-slate-200">
+              বেসিক জানি
+            </option>
+            <option value="intermediate" className="bg-zinc-900 text-slate-200">
+              মাঝারি
+            </option>
+            <option value="advanced" className="bg-zinc-900 text-slate-200">
+              অভিজ্ঞ
+            </option>
           </select>
           {errors.computerExperience && (
             <p className="text-xs text-red-600">{errors.computerExperience}</p>

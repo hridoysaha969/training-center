@@ -1,5 +1,16 @@
 import TransactionsTable from "@/components/admin/transactions-table";
-import { transactionsMock } from "@/data/mock-tables";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Transactions | Admin | Excel Computer & IT Center",
+  description: "View and manage financial transactions and ledger records.",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+};
+
 
 export default function TransactionsPage() {
   return (

@@ -1,18 +1,11 @@
 "use client";
 import * as React from "react";
 import {
-  BookOpen,
-  Bot,
-  Frame,
-  Layers,
+  Award,
   LayoutDashboard,
   LineChart,
-  Map,
-  PieChart,
   Plus,
   Receipt,
-  Settings2,
-  SquareTerminal,
   UserCog,
   Users,
   Wallet,
@@ -48,9 +41,9 @@ const sidebarLinks = {
       icon: Users,
     },
     {
-      title: "Batches",
-      url: "/admin/batches",
-      icon: Layers,
+      title: "Certificates",
+      url: "/admin/certificates",
+      icon: Award,
     },
   ],
 
@@ -88,7 +81,9 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 };
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
-  if (!user) return null;
+  if (!user) {
+    return null; // or a placeholder/sidebar skeleton
+  }
 
   return (
     <Sidebar collapsible="icon" {...props}>
