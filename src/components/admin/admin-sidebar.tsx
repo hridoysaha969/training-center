@@ -102,12 +102,12 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         <NavMain operations={sidebarLinks.operations} />
         <NavProjects
           financeAdmin={sidebarLinks.financeAdmin}
-          currentRole={user?.role || "STAFF"}
+          currentRole={session?.user?.role || "STAFF"}
         />
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={user} />
+        <NavUser user={session?.user} />
       </SidebarFooter>
 
       <SidebarRail />
