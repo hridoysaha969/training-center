@@ -1,3 +1,5 @@
+import "@/models"; // registers all models
+
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/rbac";
 import { connectDB } from "@/lib/mongodb";
