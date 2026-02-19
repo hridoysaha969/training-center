@@ -98,6 +98,7 @@ export const metadata: Metadata = {
 };
 
 const page = async () => {
+  const allCourse = courses;
   return (
     <section className="relative overflow-hidden pb-16 pt-28">
       {/* Background decoration */}
@@ -115,7 +116,7 @@ const page = async () => {
         {/* Courses Grid */}
         <div className="relative">
           <div className="columns-1 lg:columns-2 gap-6">
-            {courses.map((course) => (
+            {allCourse.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
           </div>

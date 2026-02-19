@@ -9,7 +9,7 @@ interface CourseCardProps {
 
 export default function CourseCard({ course }: CourseCardProps) {
   return (
-    <div className="break-inside-avoid backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl sm:p-8 p-4 shadow-xl space-y-2">
+    <div className="break-inside-avoid backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl sm:p-8 p-4 shadow-xl space-y-2 mb-4 md:mb-0">
       {/* Accent Rail */}
       <div className={`w-1 rounded-full bg-${course.accent}-500`} aria-hidden />
 
