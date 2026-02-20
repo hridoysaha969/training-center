@@ -1,7 +1,7 @@
 import { courses } from "@/data/cources";
 import { Phone, Mail, MapPin } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import AdminFooterShortcut from "./AdminFooterShortcut";
 
 export default function Footer() {
   return (
@@ -10,23 +10,7 @@ export default function Footer() {
         {/* Top Grid */}
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Column 1 – Brand */}
-          <div>
-            <div className="flex items-center gap-1.5">
-              <Image
-                src={`/excel-computer.png`}
-                height={55}
-                width={55}
-                alt="Excel Computer"
-              />
-              <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">
-                Excel Computer & <br /> IT Center
-              </h3>
-            </div>
-            <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              বাস্তবভিত্তিক দক্ষতা ও ক্যারিয়ার উন্নয়নে নিবেদিত একটি প্রফেশনাল
-              কম্পিউটার ট্রেনিং সেন্টার।
-            </p>
-          </div>
+          <AdminFooterShortcut />
 
           {/* Column 2 – Courses */}
           <div>
