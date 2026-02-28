@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { cn } from "@/lib/cn";
+import { truncateText } from "./oerview-tables";
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -334,11 +335,13 @@ export default function TransactionsTable() {
                     </span>
                   </TableCell>
 
-                  <TableCell className="font-medium">{r.title}</TableCell>
+                  <TableCell className="font-medium">
+                    {truncateText(r.title, 50)}
+                  </TableCell>
 
                   <TableCell className="hidden lg:table-cell">
                     <span className="text-muted-foreground">
-                      {r.note ?? "-"}
+                      {truncateText(r.note || "", 50) ?? "-"}
                     </span>
                   </TableCell>
 

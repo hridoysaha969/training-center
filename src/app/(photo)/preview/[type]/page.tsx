@@ -38,7 +38,7 @@ export default function PreviewPage({ params }: { params: { type: string } }) {
     }
 
     clear();
-    router.push("/"); // later you can route to list page / success screen
+    router.push("/capture"); // later you can route to list page / success screen
   }
 
   return (

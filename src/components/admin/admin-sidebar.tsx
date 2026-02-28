@@ -7,6 +7,7 @@ import {
   Plus,
   Receipt,
   UserCog,
+  UserCog2,
   Users,
   Wallet,
 } from "lucide-react";
@@ -45,6 +46,11 @@ const sidebarLinks = {
       title: "Certificates",
       url: "/admin/certificates",
       icon: Award,
+    },
+    {
+      title: "Assign Course",
+      url: "/admin/assign-course",
+      icon: UserCog2,
     },
   ],
 

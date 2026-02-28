@@ -1,13 +1,17 @@
-import { generateBatch, generateRoll } from "@/lib/generators";
 import { connectDB } from "@/lib/mongodb";
 import { requireRole } from "@/lib/rbac";
-import { admissionSchema } from "@/lib/validators/admission";
 import { Course } from "@/models/Course";
 import { Enrollment } from "@/models/Enrollment";
 import { LedgerTransaction } from "@/models/LedgerTransaction";
 import { Student } from "@/models/Student";
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+const reassignSchema = z.object({
+  roll: z.string().min(1),
+  courseId: z.string().min(1),
+});
 
 export async function POST(req: Request) {
   const admin = await requireRole(["SUPER_ADMIN", "ADMIN", "STAFF"]);
@@ -28,7 +32,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const parsed = admissionSchema.safeParse(body);
+  const parsed = reassignSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       {
@@ -42,20 +46,17 @@ export async function POST(req: Request) {
 
   await connectDB();
 
-  const data = parsed.data;
+  const { roll, courseId } = parsed.data;
 
-  // Server-side duplicate guard
-  const duplicate = await Student.exists({
-    nidOrBirthId: data.nidOrBirthId.trim(),
-  });
-  if (duplicate) {
+  const student = await Student.findOne({ roll: roll.trim() });
+  if (!student) {
     return NextResponse.json(
-      { success: false, message: "Duplicate NID/Birth ID found" },
-      { status: 409 },
+      { success: false, message: "Student not found" },
+      { status: 404 },
     );
   }
 
-  const course = await Course.findById(data.courseId);
+  const course = await Course.findById(courseId);
   if (!course || !course.isActive) {
     return NextResponse.json(
       { success: false, message: "Invalid or inactive course" },
@@ -63,60 +64,38 @@ export async function POST(req: Request) {
     );
   }
 
-  const admissionDate = new Date();
+  // prevent duplicate enrollment for same course (your schema index will also enforce)
+  const exists = await Enrollment.exists({
+    studentId: student._id,
+    courseId: course._id,
+  });
+  if (exists) {
+    return NextResponse.json(
+      { success: false, message: "Student already enrolled in this course" },
+      { status: 409 },
+    );
+  }
+
+  const now = new Date();
 
   const session = await mongoose.startSession();
   try {
-    let studentDoc: any = null;
     let enrollmentDoc: any = null;
 
     await session.withTransaction(async () => {
-      const roll = await generateRoll(admissionDate);
-      const batchName = await generateBatch(course.code, admissionDate);
+      // simple batch name: reuse your generator if you want
+      // if you have generateBatch(course.code, now) use it here
+      const batchName = `${course.code}-${String(now.getFullYear()).slice(-2)}${String(
+        now.getMonth() + 1,
+      ).padStart(2, "0")}-01`;
 
-      // Create student
-      studentDoc = await Student.create(
-        [
-          {
-            roll,
-            fullName: data.fullName.trim(),
-            dateOfBirth: new Date(data.dateOfBirth),
-            nidOrBirthId: data.nidOrBirthId.trim(),
-            gender: data.gender,
-            phone: data.phone.trim(),
-            email: data.email?.trim() || undefined,
-            presentAddress: data.presentAddress.trim(),
-            photoUrl: data.photoUrl.trim(),
-
-            guardian: {
-              name: data.guardianName.trim(),
-              relation: data.guardianRelation.trim(),
-              phone: data.guardianPhone.trim(),
-              occupation: data.guardianOccupation.trim(),
-              address: data.guardianAddress.trim(),
-            },
-
-            academic: {
-              qualification: data.qualification.trim(),
-              passingYear: data.passingYear.trim(),
-              instituteName: data.instituteName.trim(),
-            },
-
-            admissionDate,
-            createdBy: admin.id,
-          },
-        ],
-        { session },
-      ).then((arr) => arr[0]);
-
-      // Create enrollment
       enrollmentDoc = await Enrollment.create(
         [
           {
-            studentId: studentDoc._id,
+            studentId: student._id,
             courseId: course._id,
             batchName,
-            startDate: admissionDate,
+            startDate: now,
             status: "RUNNING",
             createdBy: admin.id,
           },
@@ -124,7 +103,6 @@ export async function POST(req: Request) {
         { session },
       ).then((arr) => arr[0]);
 
-      // Create ledger CREDIT (cash in)
       await LedgerTransaction.create(
         [
           {
@@ -132,9 +110,9 @@ export async function POST(req: Request) {
             source: "ADMISSION",
             amount: course.fee,
             title: `Admission fee - ${course.name}`,
-            date: admissionDate,
+            date: now,
             createdBy: admin.id,
-            refStudentId: studentDoc._id,
+            refStudentId: student._id,
             refEnrollmentId: enrollmentDoc._id,
           },
         ],
@@ -144,10 +122,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Admission created",
+      message: "Student reassigned successfully",
       data: {
-        roll: studentDoc.roll,
-        studentId: String(studentDoc._id),
+        roll: student.roll,
+        studentId: String(student._id),
+        enrollmentId: String(enrollmentDoc._id),
         batchName: enrollmentDoc.batchName,
         course: {
           id: String(course._id),
@@ -158,16 +137,18 @@ export async function POST(req: Request) {
       },
     });
   } catch (e: any) {
-    // common: duplicate key due to race
     if (e?.code === 11000) {
       return NextResponse.json(
-        { success: false, message: "Duplicate detected. Try again." },
+        {
+          success: false,
+          message: "Duplicate detected. Student may already be enrolled.",
+        },
         { status: 409 },
       );
     }
 
     return NextResponse.json(
-      { success: false, message: "Failed to create admission" },
+      { success: false, message: "Failed to reassign student" },
       { status: 500 },
     );
   } finally {
