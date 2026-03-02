@@ -43,6 +43,11 @@ type StudentDetailsResponse = {
       batchName: string;
       startDate: string | Date;
       status: "RUNNING" | "COMPLETED";
+
+      resultStatus?: "PENDING" | "PASS" | "FAIL";
+      certificateId?: string | null;
+      certificateIssuedAt?: string | Date | null;
+
       course: null | {
         id: string;
         name: string;
@@ -97,7 +102,23 @@ export default async function StudentDetailsPage({
   const s = json.data!.student;
   const enrollments = json.data!.enrollments;
 
-  const certificateIssued = !!s.certificateId;
+  const certificatesIssuedCount = enrollments.filter((e) =>
+    Boolean((e as any).certificateId),
+  ).length;
+
+  const certificateIssued = certificatesIssuedCount > 0;
+
+  const latestIssuedCertificate = enrollments
+    .filter((e) => Boolean((e as any).certificateId))
+    .sort((a: any, b: any) => {
+      const ad = a.certificateIssuedAt
+        ? new Date(a.certificateIssuedAt).getTime()
+        : 0;
+      const bd = b.certificateIssuedAt
+        ? new Date(b.certificateIssuedAt).getTime()
+        : 0;
+      return bd - ad;
+    })[0];
 
   const admin = await requireAdmin();
   const canEdit = admin?.role === "SUPER_ADMIN";
@@ -159,10 +180,19 @@ export default async function StudentDetailsPage({
           </p>
 
           <p className="text-sm text-muted-foreground">
-            Certificate:{" "}
+            Certificates:{" "}
             <span className="font-medium text-foreground">
-              {s.certificateId ?? "—"}
+              {certificatesIssuedCount}
             </span>
+            {latestIssuedCertificate?.certificateId ? (
+              <>
+                {" • "}
+                Latest:{" "}
+                <span className="font-medium text-foreground">
+                  {latestIssuedCertificate.certificateId}
+                </span>
+              </>
+            ) : null}
           </p>
         </div>
         <StudentPageAction
@@ -315,39 +345,103 @@ export default async function StudentDetailsPage({
         </Card>
       </div>
 
-      {/* Enrollments chips (your preferred design) */}
       <Card className="shadow-none">
         <CardHeader>
           <CardTitle className="text-base">Enrollments</CardTitle>
         </CardHeader>
+
         <CardContent>
           {enrollments.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No enrollments found.
             </p>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              {enrollments.map((en) => {
+            <div className="space-y-3">
+              {enrollments.map((en: any) => {
                 const running = en.status === "RUNNING";
+
                 const courseName = en.course?.name ?? "Unknown course";
+                const courseCode = en.course?.code ?? "—";
+
+                const result: "PENDING" | "PASS" | "FAIL" =
+                  en.resultStatus ?? "PENDING";
+                const certificateId = en.certificateId ?? null;
+                const certificateIssuedAt = en.certificateIssuedAt ?? null;
+
+                const resultVariant =
+                  result === "PASS"
+                    ? "default"
+                    : result === "FAIL"
+                      ? "destructive"
+                      : "outline";
 
                 return (
                   <div
                     key={en.id}
-                    className="flex items-center gap-2 rounded-full border bg-muted/40 px-3 py-1.5 text-sm"
+                    className="rounded-xl border bg-muted/20 p-4"
                   >
-                    <span className="font-medium">{courseName}</span>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      {/* left */}
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="font-medium">
+                            {courseName}{" "}
+                            <span className="text-xs text-muted-foreground">
+                              ({courseCode})
+                            </span>
+                          </div>
 
-                    <Badge
-                      variant={running ? "default" : "secondary"}
-                      className="rounded-full text-xs"
-                    >
-                      {running ? "Running" : "Completed"}
-                    </Badge>
+                          <Badge
+                            variant={running ? "default" : "secondary"}
+                            className="rounded-full text-xs"
+                          >
+                            {running ? "Running" : "Completed"}
+                          </Badge>
 
-                    <span className="text-xs text-muted-foreground">
-                      {en.batchName}
-                    </span>
+                          <Badge
+                            variant={resultVariant as any}
+                            className="rounded-full text-xs"
+                          >
+                            {result === "PENDING"
+                              ? "Result: Pending"
+                              : `Result: ${result}`}
+                          </Badge>
+                        </div>
+
+                        <div className="text-sm text-muted-foreground">
+                          Batch:{" "}
+                          <span className="font-medium text-foreground">
+                            {en.batchName}
+                          </span>
+                          {" • "}
+                          Start:{" "}
+                          <span className="font-medium text-foreground">
+                            {formatDate(en.startDate)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* right */}
+                      <div className="space-y-1 text-sm sm:text-right">
+                        <div className="text-xs text-muted-foreground">
+                          Certificate
+                        </div>
+
+                        <div className="font-medium">
+                          {certificateId ? certificateId : "—"}
+                        </div>
+
+                        {certificateIssuedAt ? (
+                          <div className="text-xs text-muted-foreground">
+                            Issued: {formatDate(certificateIssuedAt)}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-muted-foreground">
+                            Not issued
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 );
               })}

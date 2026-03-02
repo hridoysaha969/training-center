@@ -1,9 +1,11 @@
 import "@/models"; // registers all models
 
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
+
 import { requireRole } from "@/lib/rbac";
 import { connectDB } from "@/lib/mongodb";
-import { Student } from "@/models/Student";
+import { Enrollment } from "@/models/Enrollment";
 import { Counter } from "@/models/Counter";
 
 // ECITC-26-001
@@ -26,59 +28,73 @@ export async function POST(req: NextRequest) {
   await connectDB();
 
   const body = await req.json().catch(() => null);
-  const roll = String(body?.roll || "").trim();
+  const enrollmentId = String(body?.enrollmentId || "").trim();
 
-  if (!roll) {
+  if (!enrollmentId || !mongoose.Types.ObjectId.isValid(enrollmentId)) {
     return NextResponse.json(
-      { success: false, message: "Roll is required" },
+      { success: false, message: "Valid enrollmentId is required" },
       { status: 400 },
     );
   }
 
-  const student = await Student.findOne({ roll });
-  if (!student) {
+  const enrollment = await Enrollment.findById(enrollmentId);
+  if (!enrollment) {
     return NextResponse.json(
-      { success: false, message: "Student not found" },
+      { success: false, message: "Enrollment not found" },
       { status: 404 },
     );
   }
 
   // already issued -> never change
-  if (student.certificateId) {
+  if ((enrollment as any).certificateId) {
     return NextResponse.json(
       {
         success: false,
-        message: "Certificate already issued and cannot be changed.",
+        message: "Certificate already issued for this enrollment.",
       },
       { status: 409 },
+    );
+  }
+
+  // ✅ MUST be COMPLETED + PASS
+  if ((enrollment as any).status !== "COMPLETED") {
+    return NextResponse.json(
+      { success: false, message: "Enrollment must be COMPLETED." },
+      { status: 400 },
+    );
+  }
+
+  if ((enrollment as any).resultStatus !== "PASS") {
+    return NextResponse.json(
+      { success: false, message: "Result must be PASS." },
+      { status: 400 },
     );
   }
 
   const yy = yyNow();
   const key = `certificate:${yy}`;
 
-  // atomic seq increment for the current year
   const counter = await Counter.findOneAndUpdate(
     { key },
     { $inc: { seq: 1 } },
     { new: true, upsert: true },
   );
 
-  const serial = counter.seq; // 1,2,3...
-  const certificateId = `ECITC-${yy}-${pad3(serial)}`;
+  const certificateId = `ECITC-${yy}-${pad3(counter.seq)}`;
 
-  student.certificateId = certificateId;
-  student.certificateIssuedAt = new Date();
-  student.certificateIssuedBy = (admin as any).id; // your requireRole returns {id}
-  await student.save();
+  (enrollment as any).certificateId = certificateId;
+  (enrollment as any).certificateIssuedAt = new Date();
+  (enrollment as any).certificateIssuedBy = (admin as any).id;
+
+  await enrollment.save();
 
   return NextResponse.json({
     success: true,
     message: "Certificate issued successfully.",
     data: {
-      roll: student.roll,
+      enrollmentId: String(enrollment._id),
       certificateId,
-      certificateIssuedAt: student.certificateIssuedAt,
+      certificateIssuedAt: (enrollment as any).certificateIssuedAt,
     },
   });
 }

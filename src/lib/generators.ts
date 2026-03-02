@@ -36,7 +36,7 @@ export async function generateBatch(courseCode: string, admissionDate: Date) {
   );
 
   // each batch holds 20 students
-  const batchNo = Math.ceil(doc.seq / 20);
+  const batchNo = Math.ceil(doc.seq / 10);
   const batch = pad(batchNo, 2);
 
   return `${courseCode}-${YYMM}-${batch}`; // BC-2602-01

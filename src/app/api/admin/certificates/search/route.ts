@@ -34,39 +34,40 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // latest enrollment for this student (for result + course context)
-    const enrollment = await Enrollment.findOne({ studentId: student._id })
+    const enrollments = await Enrollment.find({
+      studentId: (student as any)._id,
+    })
       .sort({ createdAt: -1 })
-      .populate("courseId", "title name fee") // adjust fields to your Course schema
+      .populate("courseId", "name code fee")
       .lean();
 
     return NextResponse.json({
       success: true,
       data: {
         student,
-        enrollment: enrollment
-          ? {
-              _id: String((enrollment as any)._id),
-              batchName: (enrollment as any).batchName,
-              startDate: (enrollment as any).startDate,
-              status: (enrollment as any).status,
-              resultStatus: (enrollment as any).resultStatus,
-              resultNote: (enrollment as any).resultNote || "",
-              course: (enrollment as any).courseId
-                ? {
-                    _id: String((enrollment as any).courseId._id),
-                    name:
-                      (enrollment as any).courseId.title ||
-                      (enrollment as any).courseId.name ||
-                      "Course",
-                    fee:
-                      (enrollment as any).courseId.fee ??
-                      (enrollment as any).courseId.price ??
-                      null,
-                  }
-                : null,
-            }
-          : null,
+        enrollments: enrollments.map((e: any) => ({
+          id: String(e._id),
+          batchName: e.batchName,
+          startDate: e.startDate,
+          status: e.status, // RUNNING | COMPLETED
+
+          // result fields
+          resultStatus: e.resultStatus ?? "PENDING",
+          resultNote: e.resultNote ?? "",
+
+          // certificate fields (new)
+          certificateId: e.certificateId ?? null,
+          certificateIssuedAt: e.certificateIssuedAt ?? null,
+
+          course: e.courseId
+            ? {
+                id: String(e.courseId._id),
+                name: e.courseId.name,
+                code: e.courseId.code,
+                fee: e.courseId.fee,
+              }
+            : null,
+        })),
       },
     });
   } catch (error) {

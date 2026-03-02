@@ -1,4 +1,3 @@
-// src/app/(auth)/admin/certificates/page.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -30,12 +29,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+type EnrollmentItem = {
+  id: string;
+  batchName: string;
+  startDate: string;
+  status: "RUNNING" | "COMPLETED";
+  resultStatus: "PENDING" | "PASS" | "FAIL";
+  resultNote: string;
+  certificateId: string | null;
+  certificateIssuedAt: string | null;
+  course: null | { id: string; name: string; code: string; fee: number };
+};
+
 type SearchResponse = {
   success: boolean;
   message?: string;
   data?: {
     student: any;
-    enrollment: any | null;
+    enrollments: EnrollmentItem[];
   };
 };
 
@@ -56,7 +67,10 @@ export default function CertificatesPage() {
   const [issuing, setIssuing] = useState(false);
 
   const [student, setStudent] = useState<any | null>(null);
-  const [enrollment, setEnrollment] = useState<any | null>(null);
+  const [enrollments, setEnrollments] = useState<EnrollmentItem[]>([]);
+  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string>("");
+
+  const [saving, setSaving] = useState(false);
 
   // local result selection (UI only for now)
   const [resultStatus, setResultStatus] = useState<"PENDING" | "PASS" | "FAIL">(
@@ -64,19 +78,27 @@ export default function CertificatesPage() {
   );
   const [resultNote, setResultNote] = useState("");
 
-  const issued = Boolean(student?.certificateId);
+  const selectedEnrollment = useMemo(() => {
+    return enrollments.find((e) => e.id === selectedEnrollmentId) || null;
+  }, [enrollments, selectedEnrollmentId]);
+
+  const issued = Boolean(selectedEnrollment?.certificateId);
 
   const canIssue = useMemo(() => {
-    // keep it simple:
-    // - must have student
-    // - cannot issue if already issued
-    // - optional: only allow if PASS
-    return Boolean(student) && !issued && resultStatus === "PASS";
-  }, [student, issued, resultStatus]);
+    if (!selectedEnrollment) return false;
+    if (issued) return false;
+
+    // ✅ must be COMPLETED + PASS on the enrollment itself (saved state)
+    return (
+      selectedEnrollment.status === "COMPLETED" &&
+      selectedEnrollment.resultStatus === "PASS"
+    );
+  }, [selectedEnrollment, issued]);
 
   const reset = () => {
     setStudent(null);
-    setEnrollment(null);
+    setEnrollments([]);
+    setSelectedEnrollmentId("");
     setResultStatus("PENDING");
     setResultNote("");
   };
@@ -91,39 +113,39 @@ export default function CertificatesPage() {
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/certificates/search?roll=${r}`,
-        {
-          cache: "no-store",
-        },
+        { cache: "no-store" },
       );
 
       const json = (await res.json()) as SearchResponse;
 
-      if (!json?.success) {
-        setStudent(null);
-        setEnrollment(null);
-        return;
-      }
+      if (!json?.success) return;
 
       setStudent(json.data?.student ?? null);
-      setEnrollment(json.data?.enrollment ?? null);
 
-      // If enrollment already has a result, prefill
-      const rs = json.data?.enrollment?.resultStatus as
-        | "PENDING"
-        | "PASS"
-        | "FAIL"
-        | undefined;
-      if (rs) setResultStatus(rs);
+      const list = json.data?.enrollments ?? [];
+      setEnrollments(list);
 
-      const rn = json.data?.enrollment?.resultNote as string | undefined;
-      if (typeof rn === "string") setResultNote(rn);
+      // auto-select latest enrollment (first item)
+      if (list.length > 0) {
+        setSelectedEnrollmentId(list[0].id);
+        setResultStatus(list[0].resultStatus ?? "PENDING");
+        setResultNote(list[0].resultNote ?? "");
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const onSelectEnrollment = (id: string) => {
+    setSelectedEnrollmentId(id);
+
+    const e = enrollments.find((x) => x.id === id);
+    setResultStatus((e?.resultStatus as any) ?? "PENDING");
+    setResultNote(e?.resultNote ?? "");
+  };
+
   const issueCertificate = async () => {
-    if (!student?.roll) return;
+    if (!selectedEnrollment?.id) return;
 
     try {
       setIssuing(true);
@@ -133,26 +155,67 @@ export default function CertificatesPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ roll: student.roll }),
+          body: JSON.stringify({ enrollmentId: selectedEnrollment.id }),
         },
       );
 
       const json = await res.json();
-
       if (!json?.success) return;
 
-      // update UI immediately
-      setStudent((prev: any) =>
-        prev
-          ? {
-              ...prev,
-              certificateId: json.data.certificateId,
-              certificateIssuedAt: json.data.certificateIssuedAt,
-            }
-          : prev,
+      // update selected enrollment in UI
+      setEnrollments((prev) =>
+        prev.map((e) =>
+          e.id === selectedEnrollment.id
+            ? {
+                ...e,
+                certificateId: json.data.certificateId,
+                certificateIssuedAt: json.data.certificateIssuedAt,
+              }
+            : e,
+        ),
       );
     } finally {
       setIssuing(false);
+    }
+  };
+
+  const saveResult = async () => {
+    if (!selectedEnrollment?.id) return;
+
+    try {
+      setSaving(true);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/certificates/result`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            enrollmentId: selectedEnrollment.id,
+            resultStatus, // PASS | FAIL
+            resultNote,
+          }),
+        },
+      );
+
+      const json = await res.json();
+      if (!json?.success) return;
+
+      // update enrollment list from server response
+      setEnrollments((prev) =>
+        prev.map((e) =>
+          e.id === selectedEnrollment.id
+            ? {
+                ...e,
+                status: json.data.status,
+                resultStatus: json.data.resultStatus,
+                resultNote: json.data.resultNote,
+              }
+            : e,
+        ),
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -196,15 +259,8 @@ export default function CertificatesPage() {
               {/* Student summary */}
               <div className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="text-base font-semibold">
-                      {student.fullName}
-                    </div>
-                    {issued ? (
-                      <Badge>Issued</Badge>
-                    ) : (
-                      <Badge variant="secondary">Not issued</Badge>
-                    )}
+                  <div className="text-base font-semibold">
+                    {student.fullName}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Roll: <span className="font-medium">{student.roll}</span>
@@ -220,80 +276,119 @@ export default function CertificatesPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2 text-sm">
-                  <div className="text-muted-foreground">Certificate No.</div>
-                  <div className="font-medium">
-                    {student.certificateId ? student.certificateId : "—"}
-                  </div>
-                  {student.certificateIssuedAt ? (
-                    <div className="text-xs text-muted-foreground">
-                      Issued at: {formatDate(student.certificateIssuedAt)}
-                    </div>
-                  ) : null}
-
-                  <div className="pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.push(`/admin/students/${student.roll}`)
-                      }
-                    >
-                      View student
-                    </Button>
-                  </div>
+                <div className="pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      router.push(`/admin/students/${student.roll}`)
+                    }
+                  >
+                    View student
+                  </Button>
                 </div>
               </div>
 
-              {/* Enrollment (minimal) */}
+              {/* Enrollment selector */}
               <div className="rounded-xl border p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="font-medium">Enrollment</div>
-                  {enrollment?.status ? (
-                    <Badge variant="outline">{enrollment.status}</Badge>
+                  <div className="font-medium">Select Enrollment</div>
+                  {selectedEnrollment?.status ? (
+                    <Badge variant="outline">{selectedEnrollment.status}</Badge>
                   ) : null}
                 </div>
 
                 <Separator className="my-3" />
 
-                {enrollment ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <div className="text-xs text-muted-foreground">
-                        Course
-                      </div>
-                      <div className="font-medium">
-                        {enrollment.course?.name ?? "—"}
-                      </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <div className="mb-2 text-sm text-muted-foreground">
+                      Enrollment (Course)
                     </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">Batch</div>
-                      <div className="font-medium">
-                        {enrollment.batchName ?? "—"}
-                      </div>
+                    <Select
+                      value={selectedEnrollmentId}
+                      onValueChange={onSelectEnrollment}
+                      disabled={enrollments.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select enrollment..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {enrollments.map((e) => (
+                          <SelectItem key={e.id} value={e.id}>
+                            {e.course?.name ?? "Course"} • {e.batchName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1 text-sm">
+                    <div className="text-muted-foreground">Certificate No.</div>
+                    <div className="font-medium">
+                      {selectedEnrollment?.certificateId
+                        ? selectedEnrollment.certificateId
+                        : "—"}
                     </div>
-                    <div>
+                    {selectedEnrollment?.certificateIssuedAt ? (
                       <div className="text-xs text-muted-foreground">
-                        Start date
+                        Issued at:{" "}
+                        {formatDate(selectedEnrollment.certificateIssuedAt)}
                       </div>
-                      <div className="font-medium">
-                        {enrollment.startDate
-                          ? formatDate(enrollment.startDate)
-                          : "—"}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">
-                        Current result
-                      </div>
-                      <div className="font-medium">
-                        {enrollment.resultStatus ?? "PENDING"}
-                      </div>
+                    ) : null}
+                    <div className="pt-1">
+                      {issued ? (
+                        <Badge>Issued</Badge>
+                      ) : (
+                        <Badge variant="secondary">Not issued</Badge>
+                      )}
                     </div>
                   </div>
+                </div>
+
+                {selectedEnrollment ? (
+                  <>
+                    <Separator className="my-4" />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <div className="text-xs text-muted-foreground">
+                          Course
+                        </div>
+                        <div className="font-medium">
+                          {selectedEnrollment.course?.name ?? "—"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">
+                          Batch
+                        </div>
+                        <div className="font-medium">
+                          {selectedEnrollment.batchName}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">
+                          Start date
+                        </div>
+                        <div className="font-medium">
+                          {selectedEnrollment.startDate
+                            ? formatDate(selectedEnrollment.startDate)
+                            : "—"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">
+                          Current result
+                        </div>
+                        <div className="font-medium">
+                          {selectedEnrollment.resultStatus ?? "PENDING"}
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <div className="text-sm text-muted-foreground">
-                    No enrollment found for this student.
+                    No enrollments found for this student.
                   </div>
                 )}
               </div>
@@ -311,7 +406,7 @@ export default function CertificatesPage() {
                     <Select
                       value={resultStatus}
                       onValueChange={(v) => setResultStatus(v as any)}
-                      disabled={!enrollment || issued}
+                      disabled={!selectedEnrollment || issued}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select result" />
@@ -323,7 +418,8 @@ export default function CertificatesPage() {
                       </SelectContent>
                     </Select>
                     <div className="mt-2 text-xs text-muted-foreground">
-                      * Certificate can be issued only when result is PASS.
+                      * Certificate can be issued only when Enrollment is
+                      COMPLETED and Result is PASS.
                     </div>
                   </div>
 
@@ -335,10 +431,10 @@ export default function CertificatesPage() {
                       value={resultNote}
                       onChange={(e) => setResultNote(e.target.value)}
                       placeholder="Result note..."
-                      disabled={!enrollment || issued}
+                      disabled={!selectedEnrollment || issued}
                     />
                     <div className="mt-2 text-xs text-muted-foreground">
-                      (We’ll save this to enrollment in next step.)
+                      (We’ll save this to enrollment in the next step.)
                     </div>
                   </div>
                 </div>
@@ -355,6 +451,19 @@ export default function CertificatesPage() {
                     Clear
                   </Button>
 
+                  <Button
+                    variant="outline"
+                    disabled={
+                      !selectedEnrollment ||
+                      issued ||
+                      saving ||
+                      resultStatus === "PENDING"
+                    }
+                    onClick={saveResult}
+                  >
+                    {saving ? "Saving..." : "Save result"}
+                  </Button>
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button disabled={!canIssue || issuing}>
@@ -368,8 +477,7 @@ export default function CertificatesPage() {
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                           This will generate a certificate number and save it to
-                          the student profile. Once issued, it cannot be
-                          changed.
+                          this enrollment. Once issued, it cannot be changed.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

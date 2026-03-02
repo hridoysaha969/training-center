@@ -16,6 +16,8 @@ export type EnrollmentDoc = {
   resultUpdatedAt?: Date;
   resultUpdatedBy?: Types.ObjectId;
 
+  certificateId?: string;
+  certificateIssuedAt?: Date;
   createdBy: Types.ObjectId;
 };
 
@@ -43,6 +45,9 @@ const EnrollmentSchema = new Schema<EnrollmentDoc>(
     resultUpdatedAt: { type: Date },
     resultUpdatedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
 
+    certificateId: { type: String, trim: true },
+    certificateIssuedAt: { type: Date },
+
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "Admin",
@@ -56,6 +61,8 @@ const EnrollmentSchema = new Schema<EnrollmentDoc>(
 EnrollmentSchema.index({ studentId: 1, courseId: 1 }, { unique: true });
 
 EnrollmentSchema.index({ batchName: 1 });
+
+EnrollmentSchema.index({ certificateId: 1 }, { unique: true, sparse: true });
 
 export const Enrollment =
   models.Enrollment || model<EnrollmentDoc>("Enrollment", EnrollmentSchema);

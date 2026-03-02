@@ -11,7 +11,7 @@ import mongoose from "mongoose";
 import { LedgerTransaction } from "@/models/LedgerTransaction";
 
 export async function POST(req: Request) {
-  const admin = await requireRole(["SUPER_ADMIN", "STAFF"]);
+  const admin = await requireRole(["SUPER_ADMIN", "ADMIN", "STAFF"]);
   if (!admin) {
     return NextResponse.json(
       { success: false, message: "Unauthorized" },

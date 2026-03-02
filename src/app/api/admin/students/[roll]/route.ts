@@ -12,14 +12,6 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ roll: string }> },
 ) {
-  // const admin = await requireRole(["SUPER_ADMIN", "ADMIN", "STAFF"]);
-  // if (!admin) {
-  //   return NextResponse.json(
-  //     { success: false, message: "Unauthorized" },
-  //     { status: 401 },
-  //   );
-  // }
-
   const roll = (await params).roll?.trim();
   if (!roll) {
     return NextResponse.json(
@@ -64,18 +56,25 @@ export async function GET(
         guardian: student.guardian,
         academic: student.academic,
       },
-      enrollments: enrollments.map((e) => ({
+      enrollments: enrollments.map((e: any) => ({
         id: String(e._id),
         batchName: e.batchName,
         startDate: e.startDate,
         status: e.status,
+
+        // ✅ new (certificate per enrollment)
+        resultStatus: e.resultStatus ?? "PENDING",
+        resultNote: e.resultNote ?? "",
+        certificateId: e.certificateId ?? null,
+        certificateIssuedAt: e.certificateIssuedAt ?? null,
+
         course: e.courseId
           ? {
-              id: String((e.courseId as any)._id),
-              name: (e.courseId as any).name,
-              code: (e.courseId as any).code,
-              durationMonths: (e.courseId as any).durationMonths,
-              fee: (e.courseId as any).fee,
+              id: String(e.courseId._id),
+              name: e.courseId.name,
+              code: e.courseId.code,
+              durationMonths: e.courseId.durationMonths,
+              fee: e.courseId.fee,
             }
           : null,
       })),
