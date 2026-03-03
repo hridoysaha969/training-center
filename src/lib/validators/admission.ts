@@ -28,6 +28,7 @@ export const admissionSchema = z.object({
 
   // course selection (drives fee + batch)
   courseId: z.string().min(1, "Course is required"),
+  batchId: z.string().min(1, "Batch is required"),
 });
 
 export type AdmissionInput = z.infer<typeof admissionSchema>;

@@ -73,195 +73,24 @@ type NidCheckState =
   | { status: "ok"; message?: string }
   | { status: "duplicate"; message?: string };
 
-export default function AdmissionPage() {
-  const router = useRouter();
+  type DbBatch = {
+    id: string;
+    name: string;
+    schedule: string;
+    capacity: number;
+    startDate: string | null;
+    endDate: string | null;
+    status: "RUNNING" | "CLOSED";
+  };
 
-  const form = useForm<AdmissionInput>({
-    resolver: zodResolver(admissionSchema),
-    defaultValues: {
-      roll: ROLL_PLACEHOLDER,
+  export default function AdmissionPage() {
+    const router = useRouter();
 
-      fullName: "",
-      dateOfBirth: "",
-      nidOrBirthId: "",
-      gender: "MALE",
-      phone: "",
-      email: "",
-      presentAddress: "",
-      photoUrl: "",
-
-      guardianName: "",
-      guardianRelation: "",
-      guardianPhone: "",
-      guardianOccupation: "",
-      guardianAddress: "",
-
-      qualification: "",
-      passingYear: "",
-      instituteName: "",
-
-      courseId: "",
-    },
-    mode: "onChange",
-  });
-
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const pendingValuesRef = useRef<AdmissionInput | null>(null);
-
-  // Duplicate check state
-  const [nidCheck, setNidCheck] = useState<NidCheckState>({ status: "idle" });
-  const [submitting, setSubmitting] = useState(false);
-
-  const [dbCourses, setDbCourses] = useState<DbCourse[]>([]);
-  const [coursesLoading, setCoursesLoading] = useState(true);
-
-  const courseId = form.watch("courseId");
-  const photoUrl = form.watch("photoUrl");
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/courses`,
-        );
-        const json = await res.json();
-        if (res.ok && json?.success) setDbCourses(json.data);
-        else toast.error(json?.message || "Failed to load courses");
-      } catch {
-        toast.error("Failed to load courses");
-      } finally {
-        setCoursesLoading(false);
-      }
-    })();
-  }, []);
-
-  const course = useMemo(
-    () => dbCourses.find((c) => c.id === courseId),
-    [dbCourses, courseId],
-  );
-
-  const canSubmit =
-    form.formState.isValid &&
-    !!courseId &&
-    nidCheck.status !== "duplicate" &&
-    nidCheck.status !== "checking" &&
-    !submitting;
-
-  async function runDuplicateCheck(nidValue: string) {
-    const v = nidValue.trim();
-    if (v.length < 6) {
-      setNidCheck({ status: "idle" });
-      return;
-    }
-
-    setNidCheck({ status: "checking", message: "Checking duplicate..." });
-
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/students/exists?n=${encodeURIComponent(v)}`,
-        { method: "GET" },
-      );
-
-      if (res.status === 401 || res.status === 403) {
-        setNidCheck({ status: "idle" });
-        toast.error("Session expired. Please login again.");
-        router.push("/admin/login");
-        return;
-      }
-
-      const json = await res.json();
-
-      if (!res.ok || !json?.success) {
-        setNidCheck({ status: "idle" });
-        toast.error(json?.message || "Failed to check duplicate.");
-        return;
-      }
-
-      if (json.exists) {
-        setNidCheck({
-          status: "duplicate",
-          message: "This NID/Birth Registration Number already exists.",
-        });
-        form.setError("nidOrBirthId", {
-          type: "manual",
-          message: "Duplicate detected. Please verify student record.",
-        });
-      } else {
-        setNidCheck({ status: "ok", message: "Looks unique." });
-        const err = form.formState.errors.nidOrBirthId;
-        if (err?.type === "manual") form.clearErrors("nidOrBirthId");
-      }
-    } catch {
-      setNidCheck({ status: "idle" });
-      toast.error("Network error. Try again.");
-    }
-  }
-
-  // This is called after user confirms
-  async function finalizeSubmit(values: AdmissionInput) {
-    setSubmitting(true);
-
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/admission`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
-        },
-      );
-
-      const json = await res.json().catch(() => null);
-
-      if (res.status === 401 || res.status === 403) {
-        toast.error("Unauthorized. Please login again.");
-        router.push("/admin/login");
-        return;
-      }
-
-      if (res.status === 409) {
-        // duplicate NID/Birth ID (server-side check)
-        setNidCheck({
-          status: "duplicate",
-          message: "This NID/Birth Registration Number already exists.",
-        });
-        form.setError("nidOrBirthId", {
-          type: "manual",
-          message: "Duplicate detected. Please verify student record.",
-        });
-        toast.error(json?.message || "Duplicate detected.");
-        return;
-      }
-
-      if (res.status === 422) {
-        toast.error("Validation failed. Please check the form.");
-        // optional: if backend returns zod flatten errors
-        return;
-      }
-
-      if (!res.ok || !json?.success) {
-        toast.error(json?.message || "Failed to create admission.");
-        return;
-      }
-
-      const roll = json.data?.roll as string | undefined;
-      const batchName = json.data?.batchName as string | undefined;
-
-      toast.success("Admission created successfully.", {
-        description: roll
-          ? `Roll: ${roll}${batchName ? ` • Batch: ${batchName}` : ""}`
-          : undefined,
-        action: roll
-          ? {
-              label: "View Student",
-              onClick: () => router.push(`/admin/students/${roll}`),
-            }
-          : undefined,
-      });
-
-      // ✅ Clear form after submission (as you requested)
-      form.reset({
+    const form = useForm<AdmissionInput>({
+      resolver: zodResolver(admissionSchema),
+      defaultValues: {
         roll: ROLL_PLACEHOLDER,
+
         fullName: "",
         dateOfBirth: "",
         nidOrBirthId: "",
@@ -270,79 +99,470 @@ export default function AdmissionPage() {
         email: "",
         presentAddress: "",
         photoUrl: "",
+
         guardianName: "",
         guardianRelation: "",
         guardianPhone: "",
         guardianOccupation: "",
         guardianAddress: "",
+
         qualification: "",
         passingYear: "",
         instituteName: "",
+
         courseId: "",
-      });
+        batchId: "",
+      },
+      mode: "onChange",
+    });
 
-      setNidCheck({ status: "idle" });
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch {
-      toast.error("Network error while submitting.");
-    } finally {
-      setSubmitting(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const pendingValuesRef = useRef<AdmissionInput | null>(null);
+
+    // Duplicate check state
+    const [nidCheck, setNidCheck] = useState<NidCheckState>({ status: "idle" });
+    const [submitting, setSubmitting] = useState(false);
+
+    const [dbCourses, setDbCourses] = useState<DbCourse[]>([]);
+    const [coursesLoading, setCoursesLoading] = useState(true);
+
+    const [batches, setBatches] = useState<DbBatch[]>([]);
+    const [batchesLoading, setBatchesLoading] = useState(false);
+
+    const courseId = form.watch("courseId");
+    const photoUrl = form.watch("photoUrl");
+    const batchId = form.watch("batchId");
+
+    useEffect(() => {
+      (async () => {
+        try {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/courses`,
+          );
+          const json = await res.json();
+          if (res.ok && json?.success) setDbCourses(json.data);
+          else toast.error(json?.message || "Failed to load courses");
+        } catch {
+          toast.error("Failed to load courses");
+        } finally {
+          setCoursesLoading(false);
+        }
+      })();
+    }, []);
+
+    const course = useMemo(
+      () => dbCourses.find((c) => c.id === courseId),
+      [dbCourses, courseId],
+    );
+
+    useEffect(() => {
+      // when course changes:
+      form.setValue("batchId", ""); // reset batch selection
+      setBatches([]);
+
+      if (!courseId) return;
+      loadBatches(courseId);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [courseId]);
+
+    const canSubmit =
+      form.formState.isValid &&
+      !!courseId &&
+      !!batchId &&
+      nidCheck.status !== "duplicate" &&
+      nidCheck.status !== "checking" &&
+      !submitting;
+
+    async function runDuplicateCheck(nidValue: string) {
+      const v = nidValue.trim();
+      if (v.length < 6) {
+        setNidCheck({ status: "idle" });
+        return;
+      }
+
+      setNidCheck({ status: "checking", message: "Checking duplicate..." });
+
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/students/exists?n=${encodeURIComponent(v)}`,
+          { method: "GET" },
+        );
+
+        if (res.status === 401 || res.status === 403) {
+          setNidCheck({ status: "idle" });
+          toast.error("Session expired. Please login again.");
+          router.push("/admin/login");
+          return;
+        }
+
+        const json = await res.json();
+
+        if (!res.ok || !json?.success) {
+          setNidCheck({ status: "idle" });
+          toast.error(json?.message || "Failed to check duplicate.");
+          return;
+        }
+
+        if (json.exists) {
+          setNidCheck({
+            status: "duplicate",
+            message: "This NID/Birth Registration Number already exists.",
+          });
+          form.setError("nidOrBirthId", {
+            type: "manual",
+            message: "Duplicate detected. Please verify student record.",
+          });
+        } else {
+          setNidCheck({ status: "ok", message: "Looks unique." });
+          const err = form.formState.errors.nidOrBirthId;
+          if (err?.type === "manual") form.clearErrors("nidOrBirthId");
+        }
+      } catch {
+        setNidCheck({ status: "idle" });
+        toast.error("Network error. Try again.");
+      }
     }
-  }
 
-  async function onSubmit(values: AdmissionInput) {
-    // Ensure duplicate check has been performed at least once
-    await runDuplicateCheck(values.nidOrBirthId);
+    async function loadBatches(courseId: string) {
+      setBatchesLoading(true);
+      try {
+        const res = await fetch(
+          `/api/admin/batches/running?courseId=${courseId}`,
+          {
+            cache: "no-store",
+          },
+        );
 
-    // If duplicate, stop
-    if (nidCheck.status === "duplicate") {
-      toast.error("Duplicate NID/Birth ID found. Cannot submit.");
-      return;
+        if (res.status === 401 || res.status === 403) {
+          toast.error("Session expired. Please login again.");
+          router.push("/admin/login");
+          setBatches([]);
+          return;
+        }
+
+        const json = await res.json();
+        if (!res.ok || !json?.success) {
+          setBatches([]);
+          return;
+        }
+
+        setBatches(json.data as DbBatch[]);
+      } catch {
+        toast.error("Failed to load batches");
+        setBatches([]);
+      } finally {
+        setBatchesLoading(false);
+      }
     }
 
-    pendingValuesRef.current = values;
-    setConfirmOpen(true);
-  }
+    // This is called after user confirms
+    async function finalizeSubmit(values: AdmissionInput) {
+      setSubmitting(true);
 
-  return (
-    <div className="space-y-6 p-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Student Admission</h1>
-        <p className="text-sm text-muted-foreground">
-          Register a student. Roll & batch are auto-assigned. Certificate is
-          issued later.
-        </p>
-      </div>
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/admission`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(values),
+          },
+        );
 
-      <Separator />
+        const json = await res.json().catch(() => null);
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Top: Admission Info + Preview */}
-          <div className="grid gap-4 lg:grid-cols-3">
-            {/* Admission info */}
-            <Card className="shadow-none lg:col-span-2">
+        if (res.status === 401 || res.status === 403) {
+          toast.error("Unauthorized. Please login again.");
+          router.push("/admin/login");
+          return;
+        }
+
+        if (res.status === 409) {
+          // duplicate NID/Birth ID (server-side check)
+          setNidCheck({
+            status: "duplicate",
+            message: "This NID/Birth Registration Number already exists.",
+          });
+          form.setError("nidOrBirthId", {
+            type: "manual",
+            message: "Duplicate detected. Please verify student record.",
+          });
+          toast.error(json?.message || "Duplicate detected.");
+          return;
+        }
+
+        if (res.status === 422) {
+          toast.error("Validation failed. Please check the form.");
+          // optional: if backend returns zod flatten errors
+          return;
+        }
+
+        if (!res.ok || !json?.success) {
+          toast.error(json?.message || "Failed to create admission.");
+          return;
+        }
+
+        const roll = json.data?.roll as string | undefined;
+        const batchName = json.data?.batchName as string | undefined;
+
+        toast.success("Admission created successfully.", {
+          description: roll
+            ? `Roll: ${roll}${batchName ? ` • Batch: ${batchName}` : ""}`
+            : undefined,
+          action: roll
+            ? {
+                label: "View Student",
+                onClick: () => router.push(`/admin/students/${roll}`),
+              }
+            : undefined,
+        });
+
+        // ✅ Clear form after submission (as you requested)
+        form.reset({
+          roll: ROLL_PLACEHOLDER,
+          fullName: "",
+          dateOfBirth: "",
+          nidOrBirthId: "",
+          gender: "MALE",
+          phone: "",
+          email: "",
+          presentAddress: "",
+          photoUrl: "",
+          guardianName: "",
+          guardianRelation: "",
+          guardianPhone: "",
+          guardianOccupation: "",
+          guardianAddress: "",
+          qualification: "",
+          passingYear: "",
+          instituteName: "",
+          courseId: "",
+          batchId: "",
+        });
+
+        setNidCheck({ status: "idle" });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch {
+        toast.error("Network error while submitting.");
+      } finally {
+        setSubmitting(false);
+      }
+    }
+
+    async function onSubmit(values: AdmissionInput) {
+      // Ensure duplicate check has been performed at least once
+      await runDuplicateCheck(values.nidOrBirthId);
+
+      // If duplicate, stop
+      if (nidCheck.status === "duplicate") {
+        toast.error("Duplicate NID/Birth ID found. Cannot submit.");
+        return;
+      }
+
+      pendingValuesRef.current = values;
+      setConfirmOpen(true);
+    }
+
+    return (
+      <div className="space-y-6 p-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Student Admission</h1>
+          <p className="text-sm text-muted-foreground">
+            Register a student. Roll & batch are auto-assigned. Certificate is
+            issued later.
+          </p>
+        </div>
+
+        <Separator />
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Top: Admission Info + Preview */}
+            <div className="grid gap-4 lg:grid-cols-3">
+              {/* Admission info */}
+              <Card className="shadow-none lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-base">Admission Info</CardTitle>
+                </CardHeader>
+
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="roll"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Roll (Auto)</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            readOnly
+                            className="cursor-not-allowed"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Roll is generated on submit (server-side).
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="courseId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Course</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={(v) => {
+                            field.onChange(v);
+                            // batch resets via useEffect(courseId)
+                          }}
+                          disabled={coursesLoading}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  coursesLoading
+                                    ? "Loading..."
+                                    : "Select course"
+                                }
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {dbCourses.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Course controls fee + available batches.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="batchId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Batch</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={!courseId || batchesLoading}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  !courseId
+                                    ? "Select course first"
+                                    : batchesLoading
+                                      ? "Loading batches..."
+                                      : "Select batch"
+                                }
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {batches.length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                No running batches found for this course.
+                              </div>
+                            ) : (
+                              batches.map((b) => (
+                                <SelectItem key={b.id} value={b.id}>
+                                  {b.name} • {b.schedule}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+
+                        <FormDescription>
+                          Only <span className="font-medium">RUNNING</span>{" "}
+                          batches are selectable.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Preview */}
+              <Card className="shadow-none">
+                <CardHeader>
+                  <CardTitle className="text-base">Preview</CardTitle>
+                </CardHeader>
+
+                <CardContent className="space-y-4">
+                  <div className="rounded-xl border p-3">
+                    <p className="text-xs text-muted-foreground">Course Fee</p>
+                    <p className="mt-1 text-lg font-semibold">
+                      {course ? taka(course.fee) : "—"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border p-3">
+                    <p className="text-xs text-muted-foreground">
+                      Selected Batch
+                    </p>
+
+                    {batchId ? (
+                      (() => {
+                        const b = batches.find((x) => x.id === batchId);
+                        return (
+                          <>
+                            <p className="mt-1 text-sm font-medium">
+                              {b
+                                ? `${b.name} • ${b.schedule}`
+                                : "Selected batch"}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              This student will be enrolled into the selected
+                              running batch.
+                            </p>
+                          </>
+                        );
+                      })()
+                    ) : (
+                      <>
+                        <p className="mt-1 text-sm font-medium">—</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Select a course and choose a running batch.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Student Info */}
+            <Card className="shadow-none">
               <CardHeader>
-                <CardTitle className="text-base">Admission Info</CardTitle>
+                <CardTitle className="text-base">Student Information</CardTitle>
               </CardHeader>
 
-              <CardContent className="grid gap-4 sm:grid-cols-2">
+              <CardContent className="grid gap-4 lg:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="roll"
+                  name="fullName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Roll (Auto)</FormLabel>
+                      <FormLabel>Full Name</FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          readOnly
-                          className="cursor-not-allowed"
-                        />
+                        <Input placeholder="Student full name" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        Roll is generated on submit (server-side).
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -350,416 +570,345 @@ export default function AdmissionPage() {
 
                 <FormField
                   control={form.control}
-                  name="courseId"
+                  name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Course</FormLabel>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="01XXXXXXXXX" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="student@email.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Gender</FormLabel>
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select course" />
+                            <SelectValue placeholder="Select gender" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {dbCourses.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="MALE">Male</SelectItem>
+                          <SelectItem value="FEMALE">Female</SelectItem>
+                          <SelectItem value="OTHER">Other</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormDescription>
-                        Course controls fee + batch assignment.
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
 
-            {/* Preview */}
-            <Card className="shadow-none">
-              <CardHeader>
-                <CardTitle className="text-base">Preview</CardTitle>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                <div className="rounded-xl border p-3">
-                  <p className="text-xs text-muted-foreground">Course Fee</p>
-                  <p className="mt-1 text-lg font-semibold">
-                    {course ? taka(course.fee) : "—"}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border p-3">
-                  <p className="text-xs text-muted-foreground">Batch (Auto)</p>
-                  <p className="mt-1 text-sm font-medium">
-                    {batchPreview(course?.code)}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Final batch number is computed server-side (20 students per
-                    batch).
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Student Info */}
-          <Card className="shadow-none">
-            <CardHeader>
-              <CardTitle className="text-base">Student Information</CardTitle>
-            </CardHeader>
-
-            <CardContent className="grid gap-4 lg:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="fullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Student full name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="01XXXXXXXXX" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email (optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="student@email.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="gender"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Gender</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                <FormField
+                  control={form.control}
+                  name="dateOfBirth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date of Birth</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
+                        <Input type="date" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="MALE">Male</SelectItem>
-                        <SelectItem value="FEMALE">Female</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="dateOfBirth"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date of Birth</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                {/* NID/Birth ID with duplicate check on blur */}
+                <FormField
+                  control={form.control}
+                  name="nidOrBirthId"
+                  render={({ field }) => (
+                    <FormItem className="lg:col-span-2">
+                      <FormLabel>NID / Birth Registration Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="NID or Birth Reg. Number"
+                          {...field}
+                          onBlur={(e) => {
+                            field.onBlur();
+                            runDuplicateCheck(e.target.value);
+                          }}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            setNidCheck({ status: "idle" });
+                          }}
+                        />
+                      </FormControl>
 
-              {/* NID/Birth ID with duplicate check on blur */}
-              <FormField
-                control={form.control}
-                name="nidOrBirthId"
-                render={({ field }) => (
-                  <FormItem className="lg:col-span-2">
-                    <FormLabel>NID / Birth Registration Number</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="NID or Birth Reg. Number"
-                        {...field}
-                        onBlur={(e) => {
-                          field.onBlur();
-                          runDuplicateCheck(e.target.value);
-                        }}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          setNidCheck({ status: "idle" });
-                        }}
-                      />
-                    </FormControl>
+                      {nidCheck.status === "ok" && (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                          ✅ {nidCheck.message}
+                        </p>
+                      )}
 
-                    {nidCheck.status === "ok" && (
-                      <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                        ✅ {nidCheck.message}
-                      </p>
-                    )}
+                      {nidCheck.status === "duplicate" && (
+                        <p className="text-xs text-rose-600 dark:text-rose-400">
+                          ❌ {nidCheck.message}
+                        </p>
+                      )}
 
-                    {nidCheck.status === "duplicate" && (
-                      <p className="text-xs text-rose-600 dark:text-rose-400">
-                        ❌ {nidCheck.message}
-                      </p>
-                    )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="presentAddress"
+                  render={({ field }) => (
+                    <FormItem className="lg:col-span-2">
+                      <FormLabel>Present Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="presentAddress"
-                render={({ field }) => (
-                  <FormItem className="lg:col-span-2">
-                    <FormLabel>Present Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                {/* Photo URL + Preview */}
+                <FormField
+                  control={form.control}
+                  name="photoUrl"
+                  render={({ field }) => (
+                    <FormItem className="lg:col-span-2">
+                      <FormLabel>Student Photo URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        We accept a photo URL (no upload). Preview will appear
+                        below.
+                      </FormDescription>
+                      <FormMessage />
 
-              {/* Photo URL + Preview */}
-              <FormField
-                control={form.control}
-                name="photoUrl"
-                render={({ field }) => (
-                  <FormItem className="lg:col-span-2">
-                    <FormLabel>Student Photo URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://..." {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      We accept a photo URL (no upload). Preview will appear
-                      below.
-                    </FormDescription>
-                    <FormMessage />
-
-                    <div className="mt-3 grid gap-3 lg:grid-cols-4">
-                      {/* <div className="rounded-xl border bg-muted/30 p-3 text-xs text-muted-foreground">
+                      <div className="mt-3 grid gap-3 lg:grid-cols-4">
+                        {/* <div className="rounded-xl border bg-muted/30 p-3 text-xs text-muted-foreground">
                         Tip: Use a direct image URL. If preview fails, the URL
                         may not allow hotlinking.
                       </div> */}
 
-                      <div className="overflow-hidden col-span-1 rounded-xl border bg-muted">
-                        {photoUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={photoUrl}
-                            alt="Student preview"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-                            Photo preview
-                          </div>
-                        )}
+                        <div className="overflow-hidden col-span-1 rounded-xl border bg-muted">
+                          {photoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={photoUrl}
+                              alt="Student preview"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+                              Photo preview
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
 
-          {/* Guardian Info */}
-          <Card className="shadow-none">
-            <CardHeader>
-              <CardTitle className="text-base">Guardian Information</CardTitle>
-            </CardHeader>
+            {/* Guardian Info */}
+            <Card className="shadow-none">
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Guardian Information
+                </CardTitle>
+              </CardHeader>
 
-            <CardContent className="grid gap-4 lg:grid-cols-2">
-              {[
-                ["guardianName", "Guardian Name", "Guardian full name"],
-                ["guardianRelation", "Relation", "Father / Mother / ..."],
-                ["guardianPhone", "Guardian Phone", "01XXXXXXXXX"],
-                ["guardianOccupation", "Guardian Occupation", "Occupation"],
-              ].map(([name, label, ph]) => (
+              <CardContent className="grid gap-4 lg:grid-cols-2">
+                {[
+                  ["guardianName", "Guardian Name", "Guardian full name"],
+                  ["guardianRelation", "Relation", "Father / Mother / ..."],
+                  ["guardianPhone", "Guardian Phone", "01XXXXXXXXX"],
+                  ["guardianOccupation", "Guardian Occupation", "Occupation"],
+                ].map(([name, label, ph]) => (
+                  <FormField
+                    key={name}
+                    control={form.control}
+                    name={name as any}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{label}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={ph} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ))}
+
                 <FormField
-                  key={name}
                   control={form.control}
-                  name={name as any}
+                  name="guardianAddress"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{label}</FormLabel>
+                    <FormItem className="lg:col-span-2">
+                      <FormLabel>Guardian Address</FormLabel>
                       <FormControl>
-                        <Input placeholder={ph} {...field} />
+                        <Input placeholder="Address" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              ))}
+              </CardContent>
+            </Card>
 
-              <FormField
-                control={form.control}
-                name="guardianAddress"
-                render={({ field }) => (
-                  <FormItem className="lg:col-span-2">
-                    <FormLabel>Guardian Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+            {/* Academic Info */}
+            <Card className="shadow-none">
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Academic Information
+                </CardTitle>
+              </CardHeader>
 
-          {/* Academic Info */}
-          <Card className="shadow-none">
-            <CardHeader>
-              <CardTitle className="text-base">Academic Information</CardTitle>
-            </CardHeader>
+              <CardContent className="grid gap-4 lg:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="qualification"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Qualification</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="SSC / HSC / Diploma ..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <CardContent className="grid gap-4 lg:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="qualification"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Qualification</FormLabel>
-                    <FormControl>
-                      <Input placeholder="SSC / HSC / Diploma ..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="passingYear"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Passing Year</FormLabel>
+                      <FormControl>
+                        <Input placeholder="2024" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="passingYear"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Passing Year</FormLabel>
-                    <FormControl>
-                      <Input placeholder="2024" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="instituteName"
+                  render={({ field }) => (
+                    <FormItem className="lg:col-span-2">
+                      <FormLabel>Institute Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="College / School / University"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
 
-              <FormField
-                control={form.control}
-                name="instituteName"
-                render={({ field }) => (
-                  <FormItem className="lg:col-span-2">
-                    <FormLabel>Institute Name</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="College / School / University"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+            {/* Bottom action row */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={submitting}
+                onClick={() => {
+                  form.reset({
+                    roll: "AUTO",
+                    fullName: "",
+                    dateOfBirth: "",
+                    nidOrBirthId: "",
+                    gender: "MALE",
+                    phone: "",
+                    email: "",
+                    presentAddress: "",
+                    photoUrl: "",
+                    guardianName: "",
+                    guardianRelation: "",
+                    guardianPhone: "",
+                    guardianOccupation: "",
+                    guardianAddress: "",
+                    qualification: "",
+                    passingYear: "",
+                    instituteName: "",
+                    courseId: "",
+                    batchId: "",
+                  });
+                  setNidCheck({ status: "idle" });
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
+                Clear Form
+              </Button>
 
-          {/* Bottom action row */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={submitting}
-              onClick={() => {
-                form.reset({
-                  roll: "AUTO",
-                  fullName: "",
-                  dateOfBirth: "",
-                  nidOrBirthId: "",
-                  gender: "MALE",
-                  phone: "",
-                  email: "",
-                  presentAddress: "",
-                  photoUrl: "",
-                  guardianName: "",
-                  guardianRelation: "",
-                  guardianPhone: "",
-                  guardianOccupation: "",
-                  guardianAddress: "",
-                  qualification: "",
-                  passingYear: "",
-                  instituteName: "",
-                  courseId: "",
-                });
-                setNidCheck({ status: "idle" });
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-            >
-              Clear Form
-            </Button>
+              <Button type="submit" disabled={!canSubmit || coursesLoading}>
+                {submitting ? "Submitting..." : "Submit Admission"}
+              </Button>
+            </div>
+          </form>
+        </Form>
 
-            <Button type="submit" disabled={!canSubmit || coursesLoading}>
-              {submitting ? "Submitting..." : "Submit Admission"}
-            </Button>
-          </div>
-        </form>
-      </Form>
+        {/* Confirm Dialog */}
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Admission</AlertDialogTitle>
+              <AlertDialogDescription>
+                Please confirm the student admission. This will create the
+                student record and enrollment.
+                <br />
+                <span className="text-muted-foreground">
+                  Certificate is issued later from Certificate page.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
 
-      {/* Confirm Dialog */}
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Admission</AlertDialogTitle>
-            <AlertDialogDescription>
-              Please confirm the student admission. This will create the student
-              record and enrollment.
-              <br />
-              <span className="text-muted-foreground">
-                Certificate is issued later from Certificate page.
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                const values = pendingValuesRef.current;
-                setConfirmOpen(false);
-                if (values) finalizeSubmit(values);
-              }}
-            >
-              Confirm & Submit
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-}
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  const values = pendingValuesRef.current;
+                  setConfirmOpen(false);
+                  if (values) finalizeSubmit(values);
+                }}
+              >
+                Confirm & Submit
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    );
+  }

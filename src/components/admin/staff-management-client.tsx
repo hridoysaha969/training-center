@@ -438,13 +438,7 @@ export default function StaffManagementClient() {
                             >
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                toast.message("Reset password UI: coming soon")
-                              }
-                            >
-                              Reset Password
-                            </DropdownMenuItem>
+
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"

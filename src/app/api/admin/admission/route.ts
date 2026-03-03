@@ -2,6 +2,7 @@ import { generateBatch, generateRoll } from "@/lib/generators";
 import { connectDB } from "@/lib/mongodb";
 import { requireRole } from "@/lib/rbac";
 import { admissionSchema } from "@/lib/validators/admission";
+import { Batch } from "@/models/Batch";
 import { Course } from "@/models/Course";
 import { Enrollment } from "@/models/Enrollment";
 import { LedgerTransaction } from "@/models/LedgerTransaction";
@@ -63,6 +64,43 @@ export async function POST(req: Request) {
     );
   }
 
+  const batch = await Batch.findById(data.batchId);
+  if (!batch) {
+    return NextResponse.json(
+      { success: false, message: "Batch not found" },
+      { status: 404 },
+    );
+  }
+
+  if (String(batch.courseId) !== String(course._id)) {
+    return NextResponse.json(
+      { success: false, message: "Selected batch does not match the course" },
+      { status: 400 },
+    );
+  }
+
+  if (batch.status !== "RUNNING") {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "This batch is closed. Please select a running batch.",
+      },
+      { status: 400 },
+    );
+  }
+
+  // capacity check (count enrollments in this batch)
+  const currentCount = await Enrollment.countDocuments({ batchId: batch._id });
+  if (currentCount >= (batch.capacity || 20)) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Batch is full. Please select another batch.",
+      },
+      { status: 400 },
+    );
+  }
+
   const admissionDate = new Date();
 
   const session = await mongoose.startSession();
@@ -115,7 +153,8 @@ export async function POST(req: Request) {
           {
             studentId: studentDoc._id,
             courseId: course._id,
-            batchName,
+            batchId: batch._id,
+            batchName: batch.name,
             startDate: admissionDate,
             status: "RUNNING",
             createdBy: admin.id,

@@ -6,6 +6,7 @@ export type EnrollmentDoc = {
     type: Schema.Types.ObjectId;
     ref: "Course"; // MUST match model name exactly
   };
+  batchId?: Types.ObjectId; // optional, as not all courses may have batches
   batchName: string; // BC-2601-01
   startDate: Date;
   status: "RUNNING" | "COMPLETED";
@@ -25,6 +26,7 @@ const EnrollmentSchema = new Schema<EnrollmentDoc>(
   {
     studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
     courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true },
+    batchId: { type: Schema.Types.ObjectId, ref: "Batch" },
     batchName: { type: String, required: true, trim: true },
     startDate: { type: Date, required: true },
     status: {
@@ -60,7 +62,8 @@ const EnrollmentSchema = new Schema<EnrollmentDoc>(
 // prevent duplicate enrollment for same course if you want:
 EnrollmentSchema.index({ studentId: 1, courseId: 1 }, { unique: true });
 
-EnrollmentSchema.index({ batchName: 1 });
+EnrollmentSchema.index({ batchId: 1, createdAt: -1 });
+EnrollmentSchema.index({ batchName: 1, createdAt: -1 });
 
 EnrollmentSchema.index({ certificateId: 1 }, { unique: true, sparse: true });
 

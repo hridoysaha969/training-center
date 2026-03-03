@@ -3,6 +3,7 @@ import * as React from "react";
 import {
   Award,
   LayoutDashboard,
+  Library,
   LineChart,
   Plus,
   Receipt,
@@ -51,6 +52,12 @@ const sidebarLinks = {
       title: "Assign Course",
       url: "/admin/assign-course",
       icon: UserCog2,
+    },
+    {
+      title: "Batches",
+      url: "/admin/batches",
+      icon: Library,
+      role: ["ADMIN", "SUPER_ADMIN"],
     },
   ],
 
@@ -105,7 +112,10 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain operations={sidebarLinks.operations} />
+        <NavMain
+          operations={sidebarLinks.operations}
+          currentRole={session?.user?.role || "STAFF"}
+        />
         <NavProjects
           financeAdmin={sidebarLinks.financeAdmin}
           currentRole={session?.user?.role || "STAFF"}
