@@ -1,4 +1,4 @@
-import { generateBatch, generateRoll } from "@/lib/generators";
+import { generateRoll } from "@/lib/generators";
 import { connectDB } from "@/lib/mongodb";
 import { requireRole } from "@/lib/rbac";
 import { admissionSchema } from "@/lib/validators/admission";
@@ -72,6 +72,16 @@ export async function POST(req: Request) {
     );
   }
 
+  // auto-close if endDate is passed
+  if (
+    batch?.endDate &&
+    new Date() > batch.endDate &&
+    batch.status !== "CLOSED"
+  ) {
+    batch.status = "CLOSED";
+    await batch.save();
+  }
+
   if (String(batch.courseId) !== String(course._id)) {
     return NextResponse.json(
       { success: false, message: "Selected batch does not match the course" },
@@ -89,18 +99,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // capacity check (count enrollments in this batch)
-  const currentCount = await Enrollment.countDocuments({ batchId: batch._id });
-  if (currentCount >= (batch.capacity || 20)) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Batch is full. Please select another batch.",
-      },
-      { status: 400 },
-    );
-  }
-
   const admissionDate = new Date();
 
   const session = await mongoose.startSession();
@@ -110,7 +108,6 @@ export async function POST(req: Request) {
 
     await session.withTransaction(async () => {
       const roll = await generateRoll(admissionDate);
-      const batchName = await generateBatch(course.code, admissionDate);
 
       // Create student
       studentDoc = await Student.create(
@@ -146,6 +143,15 @@ export async function POST(req: Request) {
         ],
         { session },
       ).then((arr) => arr[0]);
+
+      // capacity check inside transaction (safer)
+      const currentCount = await Enrollment.countDocuments({
+        batchId: batch._id,
+      }).session(session);
+      if (currentCount >= (batch.capacity || 20)) {
+        // Throw to abort transaction
+        throw Object.assign(new Error("BATCH_FULL"), { code: "BATCH_FULL" });
+      }
 
       // Create enrollment
       enrollmentDoc = await Enrollment.create(
@@ -202,6 +208,16 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { success: false, message: "Duplicate detected. Try again." },
         { status: 409 },
+      );
+    }
+
+    if (e?.code === "BATCH_FULL" || e?.message === "BATCH_FULL") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Batch is full. Please select another batch.",
+        },
+        { status: 400 },
       );
     }
 

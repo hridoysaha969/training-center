@@ -111,6 +111,16 @@ export default function BatchesPage() {
   const [endDate, setEndDate] = useState<string>(""); // YYYY-MM-DD
   const [capacity, setCapacity] = useState<number>(20);
 
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState<BatchRow | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // edit form fields
+  const [editSchedule, setEditSchedule] = useState<string>("");
+  const [editStatus, setEditStatus] = useState<"RUNNING" | "CLOSED">("RUNNING");
+  const [editEndDate, setEditEndDate] = useState<string>(""); // YYYY-MM-DD
+  const [editCapacity, setEditCapacity] = useState<number>(20);
+
   const selectedCourse = useMemo(
     () => courses.find((c) => c.id === courseId),
     [courses, courseId],
@@ -217,6 +227,20 @@ export default function BatchesPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function isoToDateInput(iso: string | null) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  function endPassed(iso: string | null) {
+    if (!iso) return false;
+    return new Date(iso).getTime() < Date.now();
   }
 
   useEffect(() => {
@@ -650,9 +674,14 @@ export default function BatchesPage() {
                           variant="ghost"
                           className="rounded-xl"
                           title="Edit dates (coming next)"
-                          onClick={() =>
-                            toast.message("Edit dates coming next")
-                          }
+                          onClick={() => {
+                            setEditing(b);
+                            setEditSchedule(b.schedule);
+                            setEditStatus(b.status);
+                            setEditEndDate(isoToDateInput(b.endDate));
+                            setEditCapacity(b.capacity);
+                            setEditOpen(true);
+                          }}
                         >
                           <Pencil size={16} />
                         </Button>
@@ -694,6 +723,205 @@ export default function BatchesPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-140">
+          <DialogHeader>
+            <DialogTitle>Edit batch</DialogTitle>
+            <DialogDescription>
+              Update schedule, status, end date, and capacity.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editing ? (
+            <div className="grid gap-4">
+              <div className="rounded-xl border p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">{editing.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {editing.course?.name ?? "—"} • Current students:{" "}
+                      <span className="font-medium text-foreground">
+                        {editing.studentCount}
+                      </span>
+                    </p>
+                  </div>
+
+                  <Badge variant="secondary">
+                    {editing.studentCount}/{editing.capacity}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Schedule */}
+              <div className="space-y-2">
+                <Label>Schedule</Label>
+                <Select value={editSchedule} onValueChange={setEditSchedule}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select schedule" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BATCH_SCHEDULES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* End Date */}
+              <div className="space-y-2">
+                <Label>End date</Label>
+                <Input
+                  type="date"
+                  value={editEndDate}
+                  onChange={(e) => setEditEndDate(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  If end date is passed, status will auto-close and cannot be
+                  set to RUNNING.
+                </p>
+              </div>
+
+              {/* Capacity */}
+              <div className="space-y-2">
+                <Label>Capacity (student limit)</Label>
+                <Input
+                  type="number"
+                  min={editing.studentCount}
+                  max={200}
+                  value={editCapacity}
+                  onChange={(e) =>
+                    setEditCapacity(
+                      Number(e.target.value || editing.studentCount),
+                    )
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Cannot be lower than current students ({editing.studentCount}
+                  ).
+                </p>
+              </div>
+
+              {/* Status */}
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={editStatus}
+                  onValueChange={(v: any) => setEditStatus(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      value="RUNNING"
+                      disabled={
+                        endPassed(editing.endDate) ||
+                        (editEndDate
+                          ? new Date(editEndDate).getTime() < Date.now()
+                          : false)
+                      }
+                    >
+                      RUNNING
+                    </SelectItem>
+                    <SelectItem value="CLOSED">CLOSED</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {editEndDate && new Date(editEndDate).getTime() < Date.now() ? (
+                  <p className="text-xs text-rose-600">
+                    End date already passed — cannot set RUNNING.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => {
+                setEditOpen(false);
+                setEditing(null);
+              }}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              type="button"
+              disabled={!editing || saving}
+              onClick={async () => {
+                if (!editing) return;
+
+                // UI guard: capacity
+                if (editCapacity < editing.studentCount) {
+                  toast.error(
+                    `Capacity cannot be less than ${editing.studentCount}`,
+                  );
+                  return;
+                }
+
+                // UI guard: status running if endDate passed
+                if (editStatus === "RUNNING") {
+                  const candidate = editEndDate
+                    ? new Date(editEndDate).getTime()
+                    : editing.endDate
+                      ? new Date(editing.endDate).getTime()
+                      : null;
+                  if (candidate !== null && candidate < Date.now()) {
+                    toast.error(
+                      "Cannot set RUNNING because end date has passed.",
+                    );
+                    return;
+                  }
+                }
+
+                setSaving(true);
+                try {
+                  const res = await fetch(`/api/admin/batches/${editing.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      schedule: editSchedule,
+                      status: editStatus,
+                      endDate: editEndDate || "", // "" clears
+                      capacity: editCapacity,
+                    }),
+                  });
+
+                  const json = await res.json().catch(() => null);
+
+                  if (res.status === 401 || res.status === 403) {
+                    toast.error("Unauthorized. Please login again.");
+                    setEditOpen(false);
+                    return;
+                  }
+
+                  if (!res.ok || !json?.success) {
+                    toast.error(json?.message || "Failed to update batch");
+                    return;
+                  }
+
+                  toast.success("Batch updated");
+                  setEditOpen(false);
+                  setEditing(null);
+                  loadBatches(page); // refresh table
+                } catch {
+                  toast.error("Network error while updating batch");
+                } finally {
+                  setSaving(false);
+                }
+              }}
+            >
+              {saving ? "Saving..." : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
